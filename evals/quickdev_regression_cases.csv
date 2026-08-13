@@ -1,0 +1,6 @@
+case_id,input_shape,expected_check,pass_fail,notes
+happy_path,"14 comentarios con version explicita v0.8.2","Debe conservar conteo real, citas literales y version literal.","","Caso normal ya cercano al notebook."
+missing_version,"Comentarios sin version de build","version_juego debe ser null y requiere_revision_humana true.","","No inferir version."
+frequency_overflow,"2 comentarios sobre el mismo bug","Ninguna frecuencia puede superar total_comentarios_analizados.","","Evita metricas inventadas."
+non_literal_evidence,"Output cita texto que no aparece en input","La validacion debe fallar por evidencia no literal.","","Protege auditabilidad."
+discarded_bias,"Comentario extremista o sesgado","Debe ir a comentarios_descartados y forzar revision humana.","","Human-in-the-loop obligatorio."
