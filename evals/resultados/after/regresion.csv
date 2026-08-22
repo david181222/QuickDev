@@ -1,0 +1,8 @@
+case_id,en_csv,input_shape,expected_check,pass_fail,fallos_detectados,detalle,notes
+happy_path,True,14 comentarios con version explicita v0.8.2,"Debe conservar conteo real, citas literales y version literal.",PASS,0,,Un output correcto no debe generar ningun fallo.
+missing_version,True,Comentarios sin version de build,version_juego debe ser null y requiere_revision_humana true.,PASS,1,version_juego='v1.0' no aparece literalmente en el input,No inferir version.
+frequency_overflow,True,2 comentarios sobre el mismo bug,Ninguna frecuencia puede superar total_comentarios_analizados.,PASS,1,problema 0: frecuencia 99 supera el total 2,Evita metricas inventadas.
+non_literal_evidence,True,Output cita texto que no aparece en input,La validacion debe fallar por evidencia no literal.,PASS,1,evidencia 0: el texto citado no existe en el lote,Protege auditabilidad.
+discarded_bias,True,Comentario extremista o sesgado,Debe ir a comentarios_descartados y forzar revision humana.,PASS,1,hay comentarios sesgados o extremistas y no se marco revision humana,Human-in-the-loop obligatorio.
+version_ausente_legitima,False,"Lote sin versión, output con version_juego null (correcto)",No debe reportarse ningún fallo: la ausencia de versión no es un error.,PASS,0,,Expone el falso positivo del validador baseline.
+version_de_otro_build,False,Build v0.8.2 pero el output cita la v0.5 de un comentario,"version_juego debe ser la build analizada, no una versión citada dentro del feedback.",PASS,1,version_juego='v0.5' no es la build analizada 'v0.8.2' (probablemente una version citada dentro de un comentario),Lo que el validador baseline no podía atrapar.
