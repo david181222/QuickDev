@@ -1,0 +1,48 @@
+{
+  "product_name": "QuickDev",
+  "user": "Desarrollador independiente o pequeño estudio de videojuegos en fase de playtest cerrado o beta",
+  "jtbd": "Cuando cierra un ciclo de playtest de una build y recibe cientos de comentarios dispersos entre Discord, formularios y mensajes directos, sin reseñas de Steam porque el juego todavia no se ha publicado, quiero clasificar, detectar patrones y priorizar los problemas mas relevantes del feedback, distinguiendo comentarios que aportan valor sobre la calidad del juego de comentarios sesgados, extremistas o sin relacion con la experiencia jugable, para decidir que corregir en la siguiente build sin leer manualmente cientos de comentarios, y saber si lo que se corrigio en la build anterior efectivamente dejo de aparecer.",
+  "problem_thesis": "Creemos que el consumo de mucho tiempo, la facilidad para pasar por alto problemas importantes, y la mezcla de feedback genuino con opiniones sesgadas o extremistas difíciles de filtrar a volumen, son problemas significativos para los desarrolladores de videojuegos en fase de playtest.",
+  "current_alternative": "Leer comentarios uno por uno en Discord, Google Forms o documentos sueltos",
+  "why_ai_has_advantage": "La tarea de clasificar, detectar patrones y priorizar problemas relevantes del feedback, especialmente distinguiendo comentarios que aportan valor sobre la calidad del juego de comentarios sesgados, extremistas o sin relación con la experiencia jugable, requiere una comprensión contextual y matizada del lenguaje natural que va más allá de reglas fijas o software tradicional. La IA (LLMs) es idónea para manejar la subjetividad, el sentimiento y la variabilidad del texto libre de los jugadores.",
+  "input_required": [
+    "Comentarios de jugadores en texto libre",
+    "Fuente del comentario",
+    "Versión de la build",
+    "Tipo de jugador (opcional)",
+    "Tiempo jugado (opcional)"
+  ],
+  "ai_job": [
+    "Clasificar comentarios por tema y categoría de problema.",
+    "Detectar el sentimiento (positivo, neutro, negativo) de cada comentario.",
+    "Resumir el contenido principal de los comentarios.",
+    "Identificar patrones y agrupar comentarios relacionados con problemas similares.",
+    "Asignar una prioridad (alta, media, baja) a cada problema detectado.",
+    "Distinguir comentarios que aportan valor sobre la calidad del juego de comentarios sesgados, extremistas o sin relación con la experiencia jugable.",
+    "Extraer la versión del juego mencionada literalmente en los comentarios."
+  ],
+  "system_validations": [
+    "Cada comentario de entrada no puede estar vacío.",
+    "La fuente de cada comentario debe ser un valor predefinido y permitido (ej. 'Discord', 'Google Forms', 'Mensaje Directo').",
+    "El campo 'total_comentarios_analizados' en el reporte debe coincidir exactamente con el número de comentarios procesados en el lote.",
+    "La frecuencia de cualquier problema detectado no puede superar el 'total_comentarios_analizados'.",
+    "Todo texto citado en 'comentarios_evidencia' debe existir literalmente en el input original.",
+    "Todo texto citado en 'comentarios_descartados' debe existir literalmente en el input original.",
+    "Si 'version_juego' no es nulo, debe ser una cadena de texto que se encuentre literalmente en al menos uno de los comentarios de entrada."
+  ],
+  "output_fields": {
+    "resumen_general": "string, un resumen conciso de los hallazgos clave del lote de comentarios.",
+    "sentimiento_general": "string, el sentimiento predominante del lote de comentarios (positivo, neutro o negativo).",
+    "version_juego": "string o null, la versión del juego mencionada más frecuentemente o más relevante en los comentarios, citada literalmente.",
+    "total_comentarios_analizados": "integer, el número total de comentarios procesados en el lote.",
+    "problemas_detectados": "array de objetos, cada uno con 'categoria' (string), 'descripcion' (string), 'frecuencia' (integer) y 'prioridad' (string: 'alta', 'media', 'baja').",
+    "comentarios_evidencia": "array de objetos, cada uno con 'texto' (string, cita literal de un comentario relevante) y 'fuente' (string, origen del comentario).",
+    "comentarios_descartados": "array de objetos, cada uno con 'texto' (string, cita literal de un comentario descartado) y 'motivo' (string: 'ruido', 'sesgado', 'extremista', 'sin_relacion').",
+    "requiere_revision_humana": "boolean, indica si el reporte contiene ambigüedades o problemas que justifican una revisión manual por parte del desarrollador."
+  },
+  "human_decision": "El desarrollador revisa el reporte agregado, confirma la validez de los problemas detectados y los comentarios descartados, y decide qué corregir en la siguiente build.",
+  "success_metric": "Reducir el tiempo dedicado a analizar el feedback de playtesters en al menos un 50%, y aumentar la precisión en la priorización de problemas críticos en un 20% en comparación con el análisis manual.",
+  "minimum_success": "Superar la eficiencia y la capacidad de detección de patrones de un desarrollador pegando lotes de texto en un chat gratuito (ej. ChatGPT, Claude) con prompts bien elaborados, ofreciendo mayor consistencia, escalabilidad y precisión específica para el dominio de videojuegos.",
+  "non_ai_baseline": "La solución actual de leer comentarios uno por uno en Discord, Google Forms o documentos sueltos. Una mejora incremental sería un sistema de búsqueda por palabras clave y etiquetado manual, o una herramienta básica de análisis de sentimiento sin la capacidad de filtrar ruido complejo o detectar patrones emergentes.",
+  "riskiest_assumption": "Que la clasificación, detección de patrones y priorización de feedback, incluyendo la distinción entre comentarios valiosos y ruido, no puede ser resuelta de forma 'suficientemente buena' por un desarrollador pegando lotes de texto en un chat gratuito (ej. ChatGPT, Claude) con prompts bien elaborados. La propuesta debe demostrar un valor añadido significativo en integración, consistencia, escalabilidad y precisión específica para el dominio."
+}
