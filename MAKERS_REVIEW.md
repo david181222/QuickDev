@@ -69,3 +69,29 @@ El diagrama debe mostrar que parte es notebook, que parte es motor, donde estan 
 Alguien debe poder clonar, leer README, correr evals y entender que mejoro sin preguntarles.
 <!-- MAKERS_REVIEW_2026_08_27_END -->
 
+
+<!-- MAKERS_CODE_ARCH_REVIEW_2026_09_01_START -->
+## Revision de codigo y arquitectura - 2026-09-01
+
+### Lectura docente
+
+- Tienen de las mejores evidencias del grupo: baseline, after, diagnostico y regresion.
+- Falta arquitectura visible: no se detecto docs/arquitectura.md.
+- El trabajo tecnico existe, pero todavia puede ser dificil de entender desde cero.
+- Abel debe quedar visible si ya esta asociado al equipo.
+
+### Revision de principios
+
+- Bien: estan pensando en evaluacion y regresion, que es AI Engineering real.
+- Falta: reproducibilidad para un tercero.
+- Falta: documentar la frontera entre notebook, motor de evals, casos, outputs y reportes.
+
+### Pendiente de equipo
+
+Crear docs/arquitectura.md y dejar README con comandos exactos para correr evaluacion desde cero.
+
+### Pendiente por poca evidencia individual
+
+Abel debe hacer un commit propio. Si no ha entrado al flujo, asignarle un aporte pequeno: documentar arquitectura, correr evals o agregar un caso de regresion.
+<!-- MAKERS_CODE_ARCH_REVIEW_2026_09_01_END -->
+
