@@ -11,7 +11,10 @@ combinacion de versiones existe. Los campos y sus defaults son definitivos.
 
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from quickdev.domain.rules.registry import RULE_SET_VERSIONS
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -58,3 +61,33 @@ class Settings(BaseSettings):
     # base sobre la que el diagnostico respondia "elegimos mal el modelo?".
     # Con cache en disco, subir n es casi gratis.
     eval_runs: int = 10
+
+    # -----------------------------------------------------------------------
+
+    @field_validator("rules_version")
+    @classmethod
+    def _conjunto_de_reglas_existente(cls, valor: str) -> str:
+        """Un conjunto de reglas inexistente falla al arrancar, no a mitad de corrida.
+
+        Sin esto, un `rules_version` mal escrito revienta con un KeyError dentro
+        del bucle de evals, despues de haber gastado llamadas a la API.
+        """
+        if valor not in RULE_SET_VERSIONS:
+            raise ValueError(
+                f"conjunto de reglas '{valor}' inexistente. "
+                f"Disponibles: {sorted(RULE_SET_VERSIONS)}"
+            )
+        return valor
+
+    # `prompt_version` no se valida todavia: los prompts viven en `prompts/*.md`
+    # y esa carpeta es de `core/jose`. Cuando exista el PromptRegistry, aqui va
+    # el validador equivalente.
+
+    @property
+    def stamp(self) -> dict[str, str]:
+        """Lo que identifica una corrida. Sin esto, dos mediciones no se comparan."""
+        return {
+            "model": self.model,
+            "prompt_version": self.prompt_version,
+            "rules_version": self.rules_version,
+        }

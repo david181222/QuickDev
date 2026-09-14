@@ -1,23 +1,59 @@
 """Que reglas componen cada version del validador.
 
-STUB DE CONTRATO. La firma es definitiva; el cuerpo lo implementa `core/edwin`.
+Aqui esta la respuesta al `if modo == "baseline"` / `if modo == "after"` que
+ramificaba por dentro de `validate_output` (`evals/motor.py:118` y `:183`). Una
+version del validador deja de ser una rama dentro de una funcion y pasa a ser una
+composicion distinta de las mismas piezas. Ver ADR-0003.
 
-Existe ya en `main` para que las otras dos ramas puedan importar y tipar contra
-`rule_set(...)` sin esperar a que el dominio este implementado.
+El ORDEN de las reglas importa: reproduce el orden en que el validador original
+acumulaba sus fallos, y eso es lo que permite comparar los dos implementaciones
+hallazgo por hallazgo (`tests/domain/test_equivalencia_baseline.py`).
 """
 
 from quickdev.domain.rules.base import RuleSet
+from quickdev.domain.rules.citations import QuotesAreLiteral
+from quickdev.domain.rules.counts import FrequencyWithinTotal, TotalMatchesBatch
+from quickdev.domain.rules.review import (
+    AnyDiscardRequiresReview,
+    DiscardedBiasRequiresReview,
+    MultipleBuildsRequireReview,
+)
+from quickdev.domain.rules.versioning import (
+    VersionAppearsLiterally,
+    VersionIsAnalyzedBuild,
+    VersionIsNotNull,
+)
 
-# Las dos versiones que ya estan MEDIDAS y commiteadas en evals/resultados/.
-# Reproducirlas exactamente es la puerta de aceptacion del refactor.
+# Las dos versiones que estan MEDIDAS y commiteadas en evals/resultados/.
 #
-# "baseline": el validador original del notebook, falso positivo incluido (marca
-#             fallo cuando version_juego es null aunque el lote legitimamente no
-#             traiga version). Se conserva a proposito como registro historico:
-#             es la version contra la que se mide la mejora.
-# "after":    el corregido tras el diagnostico, que compara version_juego contra
-#             la build analizada del lote.
-RULE_SET_VERSIONS: tuple[str, ...] = ("baseline", "after")
+# "baseline": el validador original del notebook, falso positivo incluido
+#             (VersionIsNotNull marca fallo aunque el lote legitimamente no
+#             traiga version). Se conserva como registro historico: es la
+#             referencia contra la que se demuestra la mejora. NO se arregla.
+# "after":    el corregido tras el diagnostico. Cambia VersionIsNotNull por
+#             VersionIsAnalyzedBuild y anade dos reglas de revision humana.
+_VERSIONES: dict[str, tuple] = {
+    "baseline": (
+        TotalMatchesBatch(),
+        VersionAppearsLiterally(),
+        VersionIsNotNull(),
+        FrequencyWithinTotal(),
+        QuotesAreLiteral(),
+        DiscardedBiasRequiresReview(),
+    ),
+    "after": (
+        TotalMatchesBatch(),
+        VersionAppearsLiterally(),
+        VersionIsAnalyzedBuild(),
+        FrequencyWithinTotal(),
+        QuotesAreLiteral(),
+        DiscardedBiasRequiresReview(),
+        MultipleBuildsRequireReview(),
+        AnyDiscardRequiresReview(),
+    ),
+}
+
+RULE_SET_VERSIONS: tuple[str, ...] = tuple(_VERSIONES)
 
 
 def rule_set(version: str) -> RuleSet:
@@ -27,8 +63,12 @@ def rule_set(version: str) -> RuleSet:
         version: uno de `RULE_SET_VERSIONS`.
 
     Raises:
-        KeyError: si la version no existe. El mensaje debe listar las
-            disponibles: un conjunto de reglas nuevo se escribe DESPUES de leer
-            el diagnostico de la corrida anterior, no antes.
+        KeyError: si la version no existe.
     """
-    raise NotImplementedError("Lo implementa core/edwin (domain/rules/registry.py).")
+    if version not in _VERSIONES:
+        raise KeyError(
+            f"No existe el conjunto de reglas '{version}'. Un conjunto nuevo se "
+            f"escribe DESPUES de leer el diagnostico de la corrida anterior, no "
+            f"antes. Disponibles: {sorted(_VERSIONES)}"
+        )
+    return RuleSet(version=version, rules=_VERSIONES[version])
