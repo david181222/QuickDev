@@ -7,8 +7,7 @@ name = "quickdev"
 version = "0.1.0"
 description = "Analisis de feedback de playtesters: el modelo interpreta lenguaje, el codigo verifica hechos."
 requires-python = ">=3.12"
-# `readme = "README.md"` va aqui cuando core/jose cree el archivo. Declararlo
-# antes rompe el build: hatchling verifica que el fichero exista.
+readme = "README.md"
 authors = [{ name = "Equipo Solid" }]
 
 # Versiones fijadas con ==, no con >=. Un baseline de evals no es comparable si
