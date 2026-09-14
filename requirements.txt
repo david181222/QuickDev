@@ -1,4 +1,0 @@
-google-genai>=2.18
-pydantic>=2.13
-pandas>=2.2
-python-dotenv>=1.0
