@@ -4,7 +4,8 @@ Documento de arquitectura del proyecto. Describe **lo que está en `main`**, no 
 plan: cada archivo que se menciona existe, y lo que todavía es un stub está
 marcado como tal.
 
-Verificado contra `main @ c409cf9` · 14 sep 2026
+Verificado contra `core/jose` (sobre `main @ a706440`, con `core/edwin` y `core/miguel` ya
+mergeadas) · 14 sep 2026
 
 ---
 
@@ -35,7 +36,7 @@ flowchart LR
 
     subgraph APP["application/ - ordena los pasos"]
         direction TB
-        PROMPT["1 - PromptBuilder<br/>prompts/*.md versionados"]
+        PROMPT["1 - PromptRegistry<br/>prompts/*.md versionados"]
         PARSE["3 - Parseo a FeedbackReport<br/>extra = forbid"]
     end
 
@@ -112,7 +113,7 @@ flowchart TB
 
     APP["application/<br/>AnalyzeBatch, prompting"]
     PORTS["ports/<br/>LlmPort, LlmRequest, LlmResponse"]
-    OBS["observability/<br/>Trace, TraceStep"]
+    OBS["observability/<br/>Trace, RunManifest"]
     CONF["config.py<br/>Settings"]
 
     subgraph CORE["domain/ - el nucleo, puro"]
@@ -124,6 +125,10 @@ flowchart TB
     CLI --> APP
     NB --> APP
     EV --> APP
+    CLI -->|compone| ADAPT
+    EV -->|compone| ADAPT
+    ADAPT --> CONF
+    OBS --> PORTS
     APP --> PORTS
     APP --> CORE
     APP --> OBS
@@ -138,7 +143,9 @@ flowchart TB
     CACHE -.->|implementa| PORTS
 ```
 
-Las flechas continuas son **dependencias** y las punteadas, **implementaciones**.
+Las flechas continuas son **dependencias** y las punteadas, **implementaciones**. Las marcadas
+`compone` son el único sitio donde el borde elige adaptador: `quickdev/cli.py` y `evals/runner.py`
+deciden si hay `GeminiAdapter` o `FakeLlm` debajo, y nada por dentro se entera.
 Que las dos apunten hacia dentro es el principio de inversión de dependencias
 dibujado: ni el caso de uso depende del SDK, ni el SDK del caso de uso — los dos
 dependen de la misma abstracción, `LlmPort`. Eso es lo que permite componer
@@ -159,11 +166,14 @@ El grafo de imports real se puede extraer del código y coincide con este dibujo
 | `domain/validation.py` | `domain.models`, `domain.rules.base` |
 | `ports/llm.py` | — *nada* |
 | `observability/trace.py` | — *nada* |
+| `observability/manifest.py` | `ports.llm` |
 | `config.py` | `domain.rules.registry` |
 | `application/prompting.py` | `domain.models` |
 | `application/types.py` | `domain.models`, `domain.rules.base`, `observability.trace` |
-| `application/analyze_batch.py` | los ocho anteriores |
-| `adapters/` | — *vacío todavía* |
+| `application/analyze_batch.py` | ocho módulos: `application.prompting`, `application.types`, `config`, `domain.models`, `domain.rules.base`, `domain.validation`, `observability.trace`, `ports.llm` |
+| `adapters/cache.py`, `fake.py`, `retry.py` | `ports.llm` |
+| `adapters/gemini.py` | `ports.llm`, `config` |
+| `cli.py` | `adapters`, `application`, `config`, `domain`, `ports` — es composición, no lógica |
 
 Tres detalles de ese grafo que no son accidentes:
 
@@ -174,9 +184,11 @@ que el dominio esté listo, y el JSON crudo del modelo se conserva intacto, que 
 lo que los evals necesitan para distinguir "falló el prompt" de "faltó
 validación".
 
-**`application/analyze_batch.py` es el único módulo que importa ocho cosas.** Es
-a propósito: es el único que conoce el orden completo del flujo. Todo lo demás
-conoce solo su vecino.
+**`application/analyze_batch.py` es el único que conoce el orden completo del
+flujo**, y por eso importa ocho módulos. Todo lo demás conoce solo su vecino.
+`cli.py` importa todavía más, pero no decide nada: solo elige el adaptador y
+compone las piezas. Si alguna vez decide algo sobre el reporte, está en el sitio
+equivocado.
 
 **`config.py` importa del dominio, y en esa dirección está bien.** Depende de
 `domain.rules.registry` para validar al arrancar que el `rules_version` pedido
@@ -193,10 +205,10 @@ outputs y reportes". Esta es la traducción de ese vocabulario al repo actual.
 | Nombre en el diagrama de Makers | Dónde vive hoy | Estado |
 | --- | --- | --- |
 | `EntradaProyecto` | `PlaytestBatch` en `quickdev/domain/models.py` | implementado |
-| `AgenteQuickDev` | `AnalyzeBatch` (`application/`) + `GeminiAdapter` (`adapters/`) | stub / pendiente |
+| `AgenteQuickDev` | `AnalyzeBatch` (`application/`) + `GeminiAdapter` (`adapters/`) | implementado |
 | `ContratoSalida` | `FeedbackReport`, esquema `v1.1` | implementado |
-| `MotorEvals` | `evals/motor.py` hoy → se reparte en `evals/runner.py`, `diagnosis.py`, `reporting.py` | funcionando, se reescribe |
-| `CasosEval` | `evals/casos.py` | funcionando |
+| `MotorEvals` | `evals/runner.py`, `diagnosis.py`, `reporting.py` (antes `evals/motor.py`) | implementado |
+| `CasosEval` | `evals/cases.py` (5 evals) y `evals/regressions.py` (7 regresiones) | implementado |
 | `ReporteBaseline` | `evals/resultados/baseline/` | medido y congelado |
 | `ReporteAfter` | `evals/resultados/after/` | medido |
 
@@ -210,9 +222,11 @@ y `build_input` estaban escritos **dos veces**, en el notebook y en
 falso positivo que la otra ya tenía corregido. La respuesta a "¿el validador
 atrapa el edge case de versión?" dependía de qué archivo abrieras.
 
-Ahora el paquete `quickdev/` es la única fuente, y el notebook queda como **demo
-narrada**: unas pocas celdas que importan `quickdev` y muestran el flujo, sin
-lógica propia. Sirve para la sustentación; no es código de producción.
+Ahora el paquete `quickdev/` es la única fuente, y el notebook es una **demo
+narrada** de cinco celdas que importan `quickdev` y muestran el flujo, sin lógica
+propia ([ADR-0010](adr/0010-notebook-como-demo-delgada.md)). Lo mismo, en terminal,
+es `quickdev demo`. El razonamiento que vivía en las celdas del notebook está en
+[`historia/`](historia/README.md).
 
 ---
 
@@ -220,19 +234,26 @@ lógica propia. Sirve para la sustentación; no es código de producción.
 
 ```mermaid
 flowchart LR
-    CASOS["evals/casos.py<br/>5 EvalCase + 7 regresiones"]
-    MOTOR["evals/motor.py<br/>corre, diagnostica y escribe"]
+    CASES["evals/cases.py<br/>5 EvalCase"]
+    REGR["evals/regressions.py<br/>7 regresiones, sin modelo"]
+    RUNNER["evals/runner.py<br/>corre AnalyzeBatch n veces"]
+    DIAG["evals/diagnosis.py<br/>las 7 preguntas"]
+    REPORT["evals/reporting.py<br/>CSV, MD, JSON + manifiesto"]
     CRUDO["resultados/*/crudo.json<br/>input y output de cada corrida"]
     BASE["resultados/baseline/<br/>12/15 - referencia congelada"]
     AFTER["resultados/after/<br/>15/15"]
+    NUEVA["resultados/fecha-prompt-reglas/<br/>una carpeta por corrida"]
     GATE["scripts/gate_baseline.py<br/>puerta de aceptacion"]
 
-    CASOS --> MOTOR
-    MOTOR --> BASE
-    MOTOR --> AFTER
+    CASES --> RUNNER
+    RUNNER --> DIAG
+    DIAG --> REPORT
+    REGR --> REPORT
+    REPORT --> NUEVA
     BASE --> CRUDO
-    CRUDO -->|replay sin API| MOTOR
-    CASOS --> GATE
+    AFTER --> CRUDO
+    CRUDO -->|"FakeLlm: replay sin API"| RUNNER
+    REGR --> GATE
     BASE --> GATE
 ```
 
@@ -241,7 +262,13 @@ flowchart LR
 `baseline/` y `after/` contienen la misma estructura de cuatro archivos:
 `resultados.csv` (una fila por corrida), `diagnostico.md` (las 7 preguntas
 respondidas por eval), `crudo.json` (input y output de cada corrida) y
-`regresion.csv`.
+`regresion.csv`. Son las dos mediciones históricas y no se regeneran.
+
+Cada corrida nueva escribe en su propio directorio,
+`resultados/<fecha>-<prompt>-<reglas>/`, con un quinto archivo, `manifiesto.json`,
+que estampa versiones, modelo, `git_sha` y latencia agregada
+([ADR-0007](adr/0007-resultados-versionados-y-manifiesto.md)).
+`2026-09-14-baseline-baseline/` es el replay del baseline hecho al migrar el harness.
 
 Son dos mediciones reales, no ejemplos:
 
@@ -264,21 +291,25 @@ precisa en el prompt—, y eso hay que decirlo: no fue solo prompt.
 
 ### `crudo.json` es la pieza que hace los evals reproducibles
 
-Guarda el input y el output de cada corrida — 15 por medición. Eso permite
-**re-evaluar sin llamar a la API**, y es lo que va a alimentar el `FakeLlm`: un
-adaptador que reproduce esos outputs convierte el pipeline completo en un test de
-CI, sin red y sin cuota.
+Guarda el input y el output de cada corrida — 15 por medición. `FakeLlm` los
+reproduce, y con eso el pipeline completo corre en CI **sin red, sin API key y
+sin cuota**:
 
-Comprobado: `python -m evals.motor --modo after --desde-crudo` regenera los cuatro
-archivos de `resultados/after/` **byte a byte idénticos** a los que están
-commiteados, sin tocar la red. Cualquiera puede clonar el repo y reproducir la
-medición de 15/15 sin una API key.
+```bash
+.venv/bin/quickdev eval --prompt after --replay evals/resultados/after/crudo.json
+```
 
-Una advertencia sobre ese comando: escribe encima de `resultados/<modo>/` en vez
-de crear un directorio nuevo. Hoy no pierde nada porque la salida coincide, pero
-una corrida con reglas distintas **borraría la medición anterior**. Está
-identificado y asignado; la solución es un directorio por corrida, estampado con
-las versiones y el `git_sha`.
+No es un comando que alguien tenga que acordarse de correr:
+`tests/evals/test_replay_baseline.py` lo hace en cada `pytest` y compara tasas y
+aserciones contra el `diagnostico.md` commiteado. Lo único que difiere son tres
+respuestas **derivadas** que estaban mal inferidas, con su antes y después en
+[ADR-0008](adr/0008-correcciones-al-diagnostico.md).
+
+El replay busca cada corrida por su input, así que solo reproduce lo que se midió
+con esa misma forma de payload. El prompt `v2` envía los comentarios como array
+JSON y por eso no tiene replay hasta que se mida contra la API
+([ADR-0011](adr/0011-prompts-como-archivos-congelados.md)); pedirlo falla antes de
+correr, en vez de producir un diagnóstico falso de 0/15.
 
 ### La puerta de aceptación
 
@@ -310,20 +341,20 @@ incluida la que se mergea antes de que exista el harness nuevo.
 | `ports/llm.py` | **implementado** · `LlmPort`, `LlmRequest/Response`, retryable vs terminal |
 | `observability/trace.py` | **implementado** · `Trace`, `TraceStep` |
 | `config.py` | **implementado** · `Settings`, valida el conjunto de reglas al arrancar |
-| `application/prompting.py` | Protocol declarado · `PromptRegistry` pendiente |
-| `adapters/` | vacío · `gemini`, `fake`, `retry`, `cache` pendientes |
-| `cli.py` | no existe |
+| `application/prompting.py` | **implementado** · `PromptRegistry` lee `prompts/*.md` y comprueba su `sha256` |
+| `adapters/` | **implementado** · `gemini`, `fake`, `retry`, `cache` y `build_llm()` |
+| `observability/manifest.py` | **implementado** · `RunManifest` por corrida |
+| `cli.py` | **implementado** · `quickdev analyze`, `eval`, `demo` |
+| `prompts/` | `baseline` y `after` medidos · `v2` **sin medir** |
 
 Son **9 reglas**, no las 12 que el plan preveía: siete comprobaciones del
 validador original se fueron al sistema de tipos y las reglas que las
 reimplementaran serían código muerto. La tabla de qué se fue y a dónde está en el
 ADR-0003.
 
-Lo que falta son los adaptadores y los prompts. Mientras no existan, el pipeline
-completo ya se prueba con dobles del puerto:
-`tests/application/test_analyze_batch.py` corre `AnalyzeBatch` de punta a punta
-sin red, sin clave y sin cuota. Eso es exactamente para lo que sirve tener un
-puerto.
+No queda ningún stub. Lo que falta no es código sino **mediciones**: `v2`, el
+`response_schema` del proveedor y `evidencia_idx` están preparados y declarados
+como no medidos (ver sección 8).
 
 ---
 
@@ -337,29 +368,25 @@ exactos, verificados en Windows con Python 3.14.
 git clone https://github.com/david181222/QuickDev.git
 cd QuickDev
 python -m venv .venv
-./.venv/Scripts/python.exe -m pip install -e ".[dev]"
+./.venv/Scripts/python.exe -m pip install -e ".[dev]"     # macOS/Linux: .venv/bin/python
 ```
 
 Sin API key ya se puede correr todo esto:
 
 ```bash
-./.venv/Scripts/python.exe -m pytest                            # 19 passed
-./.venv/Scripts/python.exe -m ruff check .                      # All checks passed!
-./.venv/Scripts/python.exe scripts/gate_baseline.py             # 7/7 Puerta ABIERTA
-./.venv/Scripts/python.exe -m evals.motor --modo baseline --solo-regresiones
-```
-
-Para re-evaluar una medición guardada, tampoco hace falta API:
-
-```bash
-./.venv/Scripts/python.exe -m evals.motor --modo after --desde-crudo
+./.venv/Scripts/quickdev.exe demo                                # el lote de 14, sin red
+./.venv/Scripts/python.exe -m pytest                             # 436 passed
+./.venv/Scripts/python.exe -m ruff check .                       # All checks passed!
+./.venv/Scripts/python.exe scripts/gate_baseline.py              # 7/7 Puerta ABIERTA
+./.venv/Scripts/python.exe -m evals --solo-regresiones
+./.venv/Scripts/python.exe -m evals --modo after --replay evals/resultados/after/crudo.json
 ```
 
 Solo hace falta la clave para corridas nuevas contra el modelo:
 
 ```bash
 cp .env.example .env        # y pega la GEMINI_API_KEY
-./.venv/Scripts/python.exe -m evals.motor --modo after --n 3
+./.venv/Scripts/python.exe -m evals --modo after --n 10
 ```
 
 ### Comprobar que el dominio sigue puro
@@ -389,15 +416,20 @@ decisión, consecuencias y alternativas descartadas.
 | [0003](adr/0003-una-regla-una-clase.md) | Una regla, una clase; una versión, una composición. Y el bug de las citas |
 | [0004](adr/0004-detectar-vs-reparar.md) | `Validator` y `RepairPolicy` separados, y la única divergencia con el validador viejo |
 | [0005](adr/0005-evidencia-por-indice.md) | El modelo señala, el código cita y cuenta. Decidido, pendiente de medición |
+| [0006](adr/0006-puerto-llm-y-adaptadores-decorados.md) | Reintento y caché como decoradores del puerto; `FakeLlm` para CI |
+| [0007](adr/0007-resultados-versionados-y-manifiesto.md) | Un directorio y un manifiesto por corrida |
+| [0008](adr/0008-correcciones-al-diagnostico.md) | Las inferencias del diagnóstico que estaban mal, con el antes y el después |
+| [0009](adr/0009-structured-output-del-proveedor.md) | `response_schema` del proveedor en vez de pedir la forma por prompt. Pendiente de medir |
+| [0010](adr/0010-notebook-como-demo-delgada.md) | El notebook como demo delgada, con su narrativa migrada |
+| [0011](adr/0011-prompts-como-archivos-congelados.md) | Prompts congelados con `sha256`, payload según la versión, `v2` sin medir |
 
-Pendientes, con dueño asignado: el puerto y los adaptadores decorados, resultados
-versionados con manifiesto, las correcciones al diagnóstico, el structured output
-del proveedor, y el notebook como demo delgada.
+El índice con estado y autor de cada uno está en [`adr/README.md`](adr/README.md).
 
 ### La fidelidad del refactor está medida, no afirmada
 
 `tests/domain/test_equivalencia_baseline.py` compara la implementación nueva
-contra `evals/motor.py:validate_output` sobre los 37 casos que existen en el repo
+contra la salida de `evals/motor.py:validate_output`, congelada en
+`tests/domain/equivalencia_baseline.json` mientras ese código todavía existía, sobre los 37 casos que existen en el repo
 —las 7 regresiones y las 30 corridas guardadas— por las dos versiones del
 conjunto de reglas. Compara la lista de mensajes, contenido y orden, y el reporte
 ya reparado.
@@ -440,6 +472,9 @@ defendible— que uno que promete que todo funciona.
 - **No se mide el coste.** Se registra la latencia, pero no los tokens ni el
   dinero. Sin coste, "¿elegimos mal el modelo?" no se puede responder bien: un
   modelo mejor que cuesta diez veces más puede ser la respuesta incorrecta.
+- **Tres hipótesis preparadas y sin medir**: el prompt `v2` (ADR-0011), el
+  `response_schema` del proveedor (ADR-0009) y `evidencia_idx` (ADR-0005). Las tres
+  esperan una `GEMINI_API_KEY` válida.
 - **Esto no es un agente, y hoy no debe serlo.** Es una llamada única con esquema
   fijo y validación posterior. El `Trace` de `observability/` es la costura
   preparada para que, cuando los pasos los decida un bucle en vez de una lista,
