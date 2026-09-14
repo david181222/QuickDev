@@ -15,7 +15,7 @@ Tres reglas para leer las mediciones:
 
 ---
 
-## [Sin publicar] — `core/jose` · prompts, CLI, documentación y demo
+## `core/jose` — 2026-09-14 · prompts, CLI, documentación y demo
 
 ### Medición
 

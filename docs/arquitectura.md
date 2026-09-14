@@ -4,8 +4,8 @@ Documento de arquitectura del proyecto. Describe **lo que está en `main`**, no 
 plan: cada archivo que se menciona existe, y lo que todavía es un stub está
 marcado como tal.
 
-Verificado contra `core/jose` (sobre `main @ a706440`, con `core/edwin` y `core/miguel` ya
-mergeadas) · 14 sep 2026
+Verificado contra `main` con las tres ramas de la migración mergeadas (`core/edwin`,
+`core/miguel` y `core/jose`) · 14 sep 2026
 
 ---
 
