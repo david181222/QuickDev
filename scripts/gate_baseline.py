@@ -13,8 +13,8 @@ Salida 0 si todo coincide, 1 si algo cambio.
 
 Este script vive en `scripts/` y no en `evals/` a proposito: las tres ramas lo
 necesitan, incluida la de Edwin, que mergea antes de que exista el harness nuevo.
-Cuando `core/miguel` reescriba `evals/`, la unica linea que hay que actualizar es
-el import de `run_regresiones`.
+`core/miguel` reescribio `evals/`: el import de `run_regresiones` paso de
+`evals.casos` a `evals.regressions`, y fue la unica linea que hubo que tocar.
 
 Excepcion prevista: la regla de citas literales se vuelve mas estricta al
 corregir el bug de `real in t` (`evals/motor.py:164`). Si eso mueve un caso, va
@@ -32,7 +32,7 @@ ESPERADO = RAIZ / "evals" / "resultados" / "baseline" / "regresion.csv"
 
 def main() -> int:
     sys.path.insert(0, str(RAIZ))
-    from evals.casos import run_regresiones
+    from evals.regressions import run_regresiones
 
     actual = {f["case_id"]: f["pass_fail"] for f in run_regresiones("baseline")}
 
