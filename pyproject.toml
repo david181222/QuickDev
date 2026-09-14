@@ -29,6 +29,11 @@ dev = [
   "nbstripout==0.9.1",
 ]
 
+# `quickdev analyze | eval | demo`. Tras anadirlo hay que reinstalar
+# (`pip install -e ".[dev]"`) para que el comando aparezca en el venv.
+[project.scripts]
+quickdev = "quickdev.cli:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["quickdev"]
 

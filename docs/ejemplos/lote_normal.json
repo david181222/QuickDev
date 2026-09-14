@@ -1,0 +1,61 @@
+{
+  "build": "v0.8.2",
+  "comentarios": [
+    {
+      "fuente": "steam",
+      "texto": "El jefe final es demasiado dificil comparado con el resto del juego."
+    },
+    {
+      "fuente": "discord",
+      "texto": "Conseguir monedas toma demasiado tiempo, termine abandonando la partida despues de una hora."
+    },
+    {
+      "fuente": "discord",
+      "texto": "El combate se siente increible, mejor que muchos juegos AAA."
+    },
+    {
+      "fuente": "discord",
+      "texto": "Hay un bug donde el personaje se queda atascado en la pared del nivel 3."
+    },
+    {
+      "fuente": "steam",
+      "texto": "La musica es genial pero el menu de inventario es confuso."
+    },
+    {
+      "fuente": "discord",
+      "texto": "Este juego es una basura total, quien lo hizo no tiene idea de nada."
+    },
+    {
+      "fuente": "steam",
+      "texto": "El jefe final me parecio injusto, murio mi build entera de un solo golpe sin aviso previo."
+    },
+    {
+      "fuente": "discord",
+      "texto": "Otra vez el bug de la pared en el nivel 3, ya van 3 veces que me pasa."
+    },
+    {
+      "fuente": "encuesta",
+      "texto": "Me encanta la direccion de arte, pero los tiempos de carga entre niveles son larguisimos."
+    },
+    {
+      "fuente": "discord",
+      "texto": "El jefe final necesita un aviso antes del ataque cargado, ahora mismo no se puede reaccionar."
+    },
+    {
+      "fuente": "steam",
+      "texto": "Las cargas tardan casi un minuto en mi portatil, es desesperante."
+    },
+    {
+      "fuente": "discord",
+      "texto": "alguien sabe cuando sale el juego en consola?"
+    },
+    {
+      "fuente": "encuesta",
+      "texto": "La economia esta mal balanceada, farmear una hora para una mejora no compensa."
+    },
+    {
+      "fuente": "steam",
+      "texto": "El menu de inventario no deja comparar objetos, toca salir y entrar cada vez."
+    }
+  ]
+}
