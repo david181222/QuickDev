@@ -1,13 +1,26 @@
 """Suite de evals de QuickDev.
 
-Dos modulos, nada mas:
+Un modulo por responsabilidad. Antes eran dos archivos, `motor.py` (690 lineas,
+seis responsabilidades) y `casos.py`; trabajando de tres, cualquier cambio tocaba
+el mismo archivo y todas las ramas chocaban.
 
-- `motor`  : el esquema congelado, `validate_output`, la llamada al modelo y la
-             derivacion del diagnostico. No se toca al agregar casos.
-- `casos`  : los 5 evals del producto y las regresiones deterministas. Este es
-             el archivo que se edita.
+- `cases.py`          los 5 evals del producto y sus aserciones. ESTE es el que
+                      se edita para agregar o cambiar un eval.
+- `regressions.py`    las 7 regresiones deterministas del validador. Sin modelo.
+- `runner.py`         orquestacion: corre el pipeline n veces por caso.
+- `diagnosis.py`      las 7 preguntas, derivadas del comportamiento observado.
+- `reporting.py`      los escritores y el directorio versionado de cada corrida.
+- `prompts_legacy.py` puente temporal: los prompts con los que se midio
+                      `baseline/` y `after/`. Lo reemplaza `core/jose` con el
+                      `PromptRegistry` que lee `prompts/*.md`.
 
 Uso desde la raiz del repo:
 
-    .venv/Scripts/python.exe -m evals.motor --modo baseline --n 3
+    .venv/Scripts/python.exe -m evals --solo-regresiones
+    .venv/Scripts/python.exe -m evals --modo baseline --replay evals/resultados/baseline/crudo.json
+    .venv/Scripts/python.exe -m evals --modo after --n 10
+
+`resultados/baseline/` y `resultados/after/` son mediciones reales commiteadas.
+No se regeneran ni se sobrescriben: son la linea base y el registro historico.
+Cada corrida nueva escribe en su propio directorio. Ver ADR-0007.
 """
