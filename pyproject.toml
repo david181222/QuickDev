@@ -57,19 +57,6 @@ markers = [
 line-length = 100
 target-version = "py312"
 
-# Quedan dos de las tres exenciones. `evals/motor.py` y `evals/casos.py` ya no
-# existen: los reemplazo core/miguel por cases/runner/diagnosis/reporting, que
-# pasan ruff limpios, asi que sus lineas se borraron aqui.
-#
-# La del notebook NO se puede borrar todavia, y no es un olvido. ruff lintea
-# .ipynb por defecto, el notebook conserva sus 28 violaciones preexistentes y lo
-# vacia core/jose (decision D1), que mergea DESPUES que core/miguel. Borrarla
-# ahora dejaria `ruff check .` en rojo por un archivo de otra rama. La borra
-# core/jose en el mismo commit en que vacie el notebook.
-exclude = [
-  "QuickDev_01.ipynb",  # dueno: core/jose
-]
-
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 

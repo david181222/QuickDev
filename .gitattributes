@@ -2,3 +2,9 @@
 # cambiarles un solo byte. PromptRegistry normaliza igual, esto es la primera linea.
 prompts/*.md text eol=lf
 prompts/*.json text eol=lf
+
+# El notebook entra al repo sin outputs ni metadata de ejecucion: un diff de
+# +323 lineas por cinco celdas hace ilegible cualquier review entre tres. El
+# filtro se activa una vez por clon con `nbstripout --install` (ver README).
+*.ipynb filter=nbstripout
+*.ipynb diff=ipynb
