@@ -17,17 +17,17 @@ import sys
 from pathlib import Path
 
 from evals.diagnosis import Umbrales
-from evals.prompts_legacy import PROMPT_VERSIONS
 from evals.regressions import run_regresiones
 from evals.reporting import directorio_de_corrida, escribir_salidas
 from evals.runner import construir_corrida, run_all
+from quickdev.application.prompting import PromptRegistry
 from quickdev.config import Settings
 from quickdev.domain.rules.registry import RULE_SET_VERSIONS
 
 
 def construir_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m evals", description=__doc__)
-    p.add_argument("--modo", default="baseline", choices=sorted(PROMPT_VERSIONS))
+    p.add_argument("--modo", default="baseline", choices=sorted(PromptRegistry().versions))
     p.add_argument(
         "--rules-version",
         default=None,

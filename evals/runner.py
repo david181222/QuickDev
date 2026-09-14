@@ -28,12 +28,11 @@ from pathlib import Path
 
 from evals.cases import EVALS, EvalCase, Resultado
 from evals.diagnosis import UMBRALES_POR_DEFECTO, Umbrales, diagnosticar
-from evals.prompts_legacy import LegacyPromptProvider
 from evals.regressions import run_regresiones
 from quickdev.adapters import build_llm
 from quickdev.adapters.fake import FakeLlm
 from quickdev.application.analyze_batch import AnalyzeBatch
-from quickdev.application.prompting import PromptProvider
+from quickdev.application.prompting import PromptProvider, PromptRegistry
 from quickdev.config import Settings
 from quickdev.domain.models import SCHEMA_VERSION
 from quickdev.domain.rules.registry import rule_set
@@ -130,7 +129,7 @@ def construir_corrida(
             n=n,
             settings=settings,
             llm=fake,
-            prompts=LegacyPromptProvider(),
+            prompts=PromptRegistry(),
             umbrales=umbrales,
             es_replay=True,
         )
@@ -141,7 +140,7 @@ def construir_corrida(
         n=n or settings.eval_runs,
         settings=settings,
         llm=build_llm(settings),
-        prompts=LegacyPromptProvider(),
+        prompts=PromptRegistry(),
         umbrales=umbrales,
     )
 
