@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from evals.cases import EVALS
+from evals.cases import EVALS, POR_ID
 from evals.runner import construir_corrida
 from quickdev.adapters.fake import FakeLlm
 from quickdev.application.prompting import (
@@ -43,12 +43,27 @@ def test_el_prompt_medido_no_cambio(registro, version):
     assert hashlib.sha256(texto.encode("utf-8")).hexdigest() == SHA_MEDIDO[version]
 
 
-@pytest.mark.parametrize("modo", ["baseline", "after"])
-@pytest.mark.parametrize("case", EVALS, ids=lambda c: c.id)
-def test_el_input_es_el_que_recibio_el_modelo(registro, modo, case):
+def _grabados(modo: str) -> dict[str, str]:
+    """eval_id -> input de run1, solo de los casos que tienen corridas grabadas.
+
+    Recorre lo grabado y no `EVALS`: un eval recien agregado todavia no tiene
+    medicion, y este test no debe romperse por eso.
+    """
     crudo = json.loads((RAIZ / "evals" / "resultados" / modo / "crudo.json").read_text("utf-8"))
-    grabado = crudo[f"{case.id}_run1"]["input"]
-    assert registro.build_payload(case.batch, modo)["input"] == grabado
+    return {
+        clave.removesuffix("_run1"): registro["input"]
+        for clave, registro in crudo.items()
+        if clave.endswith("_run1")
+    }
+
+
+@pytest.mark.parametrize(
+    ("modo", "eval_id"),
+    [(modo, eval_id) for modo in ("baseline", "after") for eval_id in _grabados(modo)],
+)
+def test_el_input_es_el_que_recibio_el_modelo(registro, modo, eval_id):
+    batch = POR_ID[eval_id].batch
+    assert registro.build_payload(batch, modo)["input"] == _grabados(modo)[eval_id]
 
 
 def test_el_contexto_es_el_del_contrato_con_el_que_se_midio(registro, lote):

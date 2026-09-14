@@ -110,10 +110,15 @@ def construir_corrida(
     encogerlo en silencio es el bug de `motor.py:429-431`.
 
     Tambien falla, ANTES de correr nada, si el archivo no tiene grabado el input
-    de algun caso con la forma de payload de `prompt_version`. Sin esto, cada
-    llamada lanzaba `SinRespuestaGrabada`, el runner la registraba como corrida
-    muerta, y la salida era un diagnostico "0/15" con codigo 0: una medicion
-    falsa de un prompt que nunca se midio (p. ej. `--modo v2 --replay after/`).
+    de NINGUN caso con la forma de payload de `prompt_version`. Eso significa que
+    el archivo se midio con otra forma de input, y sin esta comprobacion la
+    salida era un diagnostico "0/15" con codigo 0: una medicion falsa de un
+    prompt que nunca se midio (p. ej. `--modo v2 --replay after/`).
+
+    Si faltan solo ALGUNOS casos no falla aqui, a proposito: es lo normal al
+    agregar un eval nuevo, que todavia no tiene corridas grabadas. Esos casos
+    salen como corridas muertas con `SinRespuestaGrabada` en su fila, visibles, y
+    el replay de los casos medidos sigue funcionando.
     """
     prompts = PromptRegistry()
     rules_version = rules_version or prompts.rules_for(prompt_version)
@@ -121,18 +126,18 @@ def construir_corrida(
 
     if replay is not None:
         fake = FakeLlm.from_crudo(replay)
-        sin_grabar = [
+        grabados = [
             case.id
             for case in EVALS
             if FakeLlm.key_for_payload(prompts.build_payload(case.batch, prompt_version))
-            not in fake.respuestas
+            in fake.respuestas
         ]
-        if sin_grabar:
+        if not grabados:
             raise ValueError(
-                f"{replay} no tiene corridas grabadas con el payload del prompt "
-                f"'{prompt_version}' para: {sin_grabar}. Un replay solo reproduce lo "
-                f"que se midio con esa misma forma de input; para medir este prompt "
-                f"hay que correrlo contra la API."
+                f"{replay} no tiene ninguna corrida grabada con el payload del prompt "
+                f"'{prompt_version}'. Un replay solo reproduce lo que se midio con esa "
+                f"misma forma de input; para medir este prompt hay que correrlo "
+                f"contra la API."
             )
         disponibles = fake.max_corridas
         if n is None:
