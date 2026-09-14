@@ -108,12 +108,32 @@ def construir_corrida(
     En modo replay, si no se pide un `n` explicito se usa el numero de corridas
     que hay grabadas, y se dice. Si se pide un `n` mayor del que hay, falla:
     encogerlo en silencio es el bug de `motor.py:429-431`.
+
+    Tambien falla, ANTES de correr nada, si el archivo no tiene grabado el input
+    de algun caso con la forma de payload de `prompt_version`. Sin esto, cada
+    llamada lanzaba `SinRespuestaGrabada`, el runner la registraba como corrida
+    muerta, y la salida era un diagnostico "0/15" con codigo 0: una medicion
+    falsa de un prompt que nunca se midio (p. ej. `--modo v2 --replay after/`).
     """
-    rules_version = rules_version or prompt_version
+    prompts = PromptRegistry()
+    rules_version = rules_version or prompts.rules_for(prompt_version)
     settings = settings or Settings(prompt_version=prompt_version, rules_version=rules_version)
 
     if replay is not None:
         fake = FakeLlm.from_crudo(replay)
+        sin_grabar = [
+            case.id
+            for case in EVALS
+            if FakeLlm.key_for_payload(prompts.build_payload(case.batch, prompt_version))
+            not in fake.respuestas
+        ]
+        if sin_grabar:
+            raise ValueError(
+                f"{replay} no tiene corridas grabadas con el payload del prompt "
+                f"'{prompt_version}' para: {sin_grabar}. Un replay solo reproduce lo "
+                f"que se midio con esa misma forma de input; para medir este prompt "
+                f"hay que correrlo contra la API."
+            )
         disponibles = fake.max_corridas
         if n is None:
             n = disponibles
@@ -129,7 +149,7 @@ def construir_corrida(
             n=n,
             settings=settings,
             llm=fake,
-            prompts=PromptRegistry(),
+            prompts=prompts,
             umbrales=umbrales,
             es_replay=True,
         )
@@ -220,7 +240,11 @@ def _una_corrida(
             "from_cache": bool(respuesta.from_cache) if respuesta else False,
             "latencia_s": round(respuesta.latency_s, 2) if respuesta else 0.0,
             "error": None,
-            "input": corrida.prompts.build_payload(case.batch).get("input"),
+            # La misma clave con la que `FakeLlm` buscara esta corrida: sin eso,
+            # una medicion con payload JSON no se podria reproducir despues.
+            "input": FakeLlm.key_for_payload(
+                corrida.prompts.build_payload(case.batch, corrida.prompt_version)
+            ),
             "output_crudo": crudo,
             "output_corregido": reparado,
             "hallazgos": [h.rule_id for h in resultado.findings],

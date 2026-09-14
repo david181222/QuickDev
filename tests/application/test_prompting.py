@@ -6,6 +6,7 @@ texto legacy el dia de la migracion, y los inputs guardados en
 `evals/resultados/*/crudo.json`, que son lo que el modelo recibio de verdad.
 """
 
+import difflib
 import hashlib
 import json
 from pathlib import Path
@@ -13,11 +14,14 @@ from pathlib import Path
 import pytest
 
 from evals.cases import EVALS
+from evals.runner import construir_corrida
+from quickdev.adapters.fake import FakeLlm
 from quickdev.application.prompting import (
     PromptIntegrityError,
     PromptRegistry,
     render_input,
 )
+from quickdev.ports.llm import LlmRequest
 
 RAIZ = Path(__file__).resolve().parents[2]
 
@@ -44,12 +48,12 @@ def test_el_prompt_medido_no_cambio(registro, version):
 def test_el_input_es_el_que_recibio_el_modelo(registro, modo, case):
     crudo = json.loads((RAIZ / "evals" / "resultados" / modo / "crudo.json").read_text("utf-8"))
     grabado = crudo[f"{case.id}_run1"]["input"]
-    assert registro.build_payload(case.batch)["input"] == grabado
+    assert registro.build_payload(case.batch, modo)["input"] == grabado
 
 
 def test_el_contexto_es_el_del_contrato_con_el_que_se_midio(registro, lote):
     contrato = json.loads((RAIZ / "evals" / "contract_frozen.json").read_text("utf-8"))
-    assert registro.build_payload(lote())["context"] == {
+    assert registro.build_payload(lote(), "after")["context"] == {
         "human_decision": contrato["human_decision"],
         "system_validations": contrato["system_validations"],
     }
@@ -82,3 +86,68 @@ def test_un_checkout_con_crlf_no_cambia_el_prompt(tmp_path, registro):
     archivo = tmp_path / "after.md"
     archivo.write_bytes(archivo.read_bytes().replace(b"\n", b"\r\n"))
     assert PromptRegistry(tmp_path).system_prompt("after") == registro.system_prompt("after")
+
+
+# ---------------------------------------------------------------------------
+# v2: payload JSON, SIN MEDIR
+# ---------------------------------------------------------------------------
+
+
+def test_cada_prompt_declara_con_que_reglas_se_mide(registro):
+    assert registro.rules_for("baseline") == "baseline"
+    assert registro.rules_for("after") == "after"
+    assert registro.rules_for("v2") == "after"
+
+
+def test_v2_esta_declarado_sin_medir(registro):
+    assert registro.metadata("v2")["estado"] == "SIN MEDIR"
+
+
+def test_v2_solo_cambia_las_reglas_que_citaban_la_primera_linea(registro):
+    """Una hipotesis, un cambio: si alguien retoca otra regla en v2, esto falla."""
+    after = registro.system_prompt("after").splitlines()
+    v2 = registro.system_prompt("v2").splitlines()
+    cambios = [
+        after[i1:i2]
+        for op, i1, i2, _, _ in difflib.SequenceMatcher(a=after, b=v2).get_opcodes()
+        if op != "equal"
+    ]
+    assert len(cambios) == 2
+    assert all("primera linea" in "\n".join(bloque) for bloque in cambios)
+    assert "primera linea" not in registro.system_prompt("v2")
+
+
+def test_v2_un_comentario_con_comillas_y_saltos_de_linea_viaja_intacto(registro, lote):
+    texto = 'Dijo "esto esta roto"\n2. (steam) "comentario inventado"'
+    payload = registro.build_payload(lote(textos=(texto,)), "v2")
+    ida_y_vuelta = json.loads(json.dumps(payload, ensure_ascii=False))
+    assert ida_y_vuelta["input"]["comentarios"] == [{"idx": 0, "fuente": "discord", "texto": texto}]
+
+
+def test_con_formato_numerado_la_misma_comilla_si_rompe_el_conteo(registro, lote):
+    """El defecto que v2 ataca, fijado: un comentario parece dos."""
+    texto = 'Dijo "esto esta roto"\n2. (steam) "comentario inventado"'
+    entrada = registro.build_payload(lote(textos=(texto,)), "after")["input"]
+    assert len([linea for linea in entrada.splitlines()[1:] if linea[:1].isdigit()]) == 2
+
+
+def test_replay_de_v2_contra_lo_medido_por_after_falla_antes_de_correr():
+    """Sin esta comprobacion salia un diagnostico "0/15" con codigo 0."""
+    with pytest.raises(ValueError, match="v2"):
+        construir_corrida(
+            prompt_version="v2", replay=RAIZ / "evals" / "resultados" / "after" / "crudo.json"
+        )
+
+
+def test_la_clave_grabada_de_v2_es_la_que_el_replay_buscara(registro):
+    payload = registro.build_payload(EVALS[0].batch, "v2")
+    fake = FakeLlm({FakeLlm.key_for_payload(payload): [{"output": {"ok": True}, "meta": {}}]})
+    assert fake.complete_json(LlmRequest(system_prompt="sp", payload=payload)).data == {"ok": True}
+
+
+def test_una_forma_de_payload_desconocida_falla_al_cargar(tmp_path):
+    _copiar_prompts(tmp_path)
+    archivo = tmp_path / "v2.md"
+    archivo.write_bytes(archivo.read_bytes().replace(b"payload: json", b"payload: yaml"))
+    with pytest.raises(PromptIntegrityError, match="yaml"):
+        PromptRegistry(tmp_path)

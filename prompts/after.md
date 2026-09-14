@@ -1,6 +1,7 @@
 ---
 version: after
 rules_version: after
+payload: numerado
 estado: medido
 medicion: evals/resultados/after/ · 15/15
 descripcion: Corrige version_juego (siempre la build de la primera linea) y convierte requiere_revision_humana en una lista cerrada de condiciones.

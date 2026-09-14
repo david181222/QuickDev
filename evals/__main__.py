@@ -32,8 +32,9 @@ def construir_parser() -> argparse.ArgumentParser:
         "--rules-version",
         default=None,
         choices=sorted(RULE_SET_VERSIONS),
-        help="por defecto, el mismo que --modo. Separarlos permite medir un prompt "
-        "nuevo con las reglas viejas, que es como se aisla cual de los dos movio el dato.",
+        help="por defecto, el que declara el prompt de --modo (v2 -> after). Separarlos "
+        "permite medir un prompt nuevo con las reglas viejas, que es como se aisla cual de "
+        "los dos movio el dato.",
     )
     p.add_argument(
         "--n",
@@ -72,7 +73,7 @@ def construir_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = construir_parser().parse_args(argv)
-    rules_version = args.rules_version or args.modo
+    rules_version = args.rules_version or PromptRegistry().rules_for(args.modo)
 
     if args.solo_regresiones:
         filas = run_regresiones(rules_version)

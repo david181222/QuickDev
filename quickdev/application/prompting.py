@@ -17,6 +17,10 @@ plantilla, reconciliar el contrato cambiaria en silencio el texto con el que se
 midieron `baseline/` y `after/`. Por lo mismo, el `context` del payload sale de
 `prompts/contexto.json`, una copia congelada, y no del contrato.
 
+El front matter declara tambien `rules_version` (con que reglas se mide) y
+`payload` (en que forma viaja el lote), porque las dos cosas son parte de lo que
+se midio con ese texto.
+
 El front matter declara el `sha256` del texto, y el registro lo comprueba al
 cargar. Un editor que quite un salto de linea, o un checkout de Windows que meta
 `\\r\\n`, no puede cambiar el prompt sin que se note: el primero falla ruidoso, el
@@ -44,14 +48,14 @@ class PromptProvider(Protocol):
         """
         ...
 
-    def build_payload(self, batch: PlaytestBatch) -> dict:
-        """Arma el payload de datos que acompana al prompt.
+    def build_payload(self, batch: PlaytestBatch, version: str) -> dict:
+        """Arma el payload de datos que acompana al prompt de esa version.
 
-        Hoy los comentarios viajan como un string numerado (`render_input`),
-        que es la forma con la que se midieron `baseline/` y `after/`. Esa
-        forma se rompe si un comentario contiene comillas o saltos de linea;
-        cambiarla cambia lo que recibe el modelo, asi que se hace en una version
-        de prompt nueva y se mide, no se desliza aqui.
+        Recibe la version porque la forma del payload ES parte del prompt: lo
+        que el modelo lee es el texto de sistema mas estos datos, y el texto de
+        cada version se refiere a una forma concreta ("la primera linea del
+        input" en `after`, "input.build" en `v2`). Un payload que no supiera la
+        version podria emparejar un texto con la forma equivocada.
         """
         ...
 
@@ -76,6 +80,29 @@ def render_input(batch: PlaytestBatch) -> str:
         f'{i}. ({c.fuente}) "{c.texto}"' for i, c in enumerate(batch.comentarios, start=1)
     )
     return encabezado + "\n" + cuerpo
+
+
+def render_json(batch: PlaytestBatch) -> dict:
+    """Los comentarios como array JSON. Es la forma del prompt `v2` (SIN MEDIR).
+
+    Una comilla o un salto de linea dentro de un comentario ya no pueden romper
+    el formato: cada texto es un string JSON con su propio escape. `idx` empieza
+    en 0 para coincidir con `PlaytestBatch.texto_de` y `evidencia_idx`.
+    """
+    return {
+        "build": batch.build,
+        "comentarios": [
+            {"idx": i, "fuente": c.fuente, "texto": c.texto}
+            for i, c in enumerate(batch.comentarios)
+        ],
+    }
+
+
+# Como se representa el lote en el payload, segun el front matter `payload:`.
+FORMAS_DE_PAYLOAD = {
+    "numerado": render_input,
+    "json": render_json,
+}
 
 
 def _leer_prompt(archivo: Path) -> tuple[dict[str, str], str]:
@@ -116,6 +143,16 @@ class PromptRegistry:
                     f"(declarado {esperado}, real {real}). Si el cambio es intencionado, "
                     f"es una version de prompt nueva: se crea otro archivo y se mide."
                 )
+            forma = meta.get("payload")
+            if forma not in FORMAS_DE_PAYLOAD:
+                raise PromptIntegrityError(
+                    f"{archivo.name}: 'payload: {forma}' no es una forma conocida. "
+                    f"Disponibles: {sorted(FORMAS_DE_PAYLOAD)}"
+                )
+            if not meta.get("rules_version"):
+                raise PromptIntegrityError(
+                    f"{archivo.name}: falta 'rules_version' en el front matter."
+                )
             self._prompts[version] = cuerpo
             self._meta[version] = meta
 
@@ -130,6 +167,15 @@ class PromptRegistry:
         self._comprobar(version)
         return dict(self._meta[version])
 
+    def rules_for(self, version: str) -> str:
+        """El conjunto de reglas con el que se mide esa version de prompt.
+
+        No se puede suponer que se llaman igual: `v2` es un prompt nuevo que se
+        mide con las reglas `after`, y un `rules_version="v2"` no existe.
+        """
+        self._comprobar(version)
+        return self._meta[version]["rules_version"]
+
     def system_prompt(self, version: str) -> str:
         """
         Raises:
@@ -138,10 +184,12 @@ class PromptRegistry:
         self._comprobar(version)
         return self._prompts[version]
 
-    def build_payload(self, batch: PlaytestBatch) -> dict:
-        """El payload con la forma con la que se midieron baseline y after."""
+    def build_payload(self, batch: PlaytestBatch, version: str) -> dict:
+        """El payload con la forma que declara el front matter de esa version."""
+        self._comprobar(version)
+        forma = FORMAS_DE_PAYLOAD[self._meta[version]["payload"]]
         return {
-            "input": render_input(batch),
+            "input": forma(batch),
             "context": dict(self._contexto),
         }
 

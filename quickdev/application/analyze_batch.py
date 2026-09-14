@@ -82,7 +82,7 @@ class AnalyzeBatch:
         inicio = time.perf_counter()
         version = self.settings.prompt_version
         system_prompt = self.prompts.system_prompt(version)
-        payload = self.prompts.build_payload(batch)
+        payload = self.prompts.build_payload(batch, version)
         trace.add_step(
             "render_prompt",
             f"prompt '{version}' con {batch.total} comentarios",
