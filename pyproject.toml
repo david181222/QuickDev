@@ -7,8 +7,7 @@ name = "quickdev"
 version = "0.1.0"
 description = "Analisis de feedback de playtesters: el modelo interpreta lenguaje, el codigo verifica hechos."
 requires-python = ">=3.12"
-# `readme = "README.md"` va aqui cuando core/jose cree el archivo. Declararlo
-# antes rompe el build: hatchling verifica que el fichero exista.
+readme = "README.md"
 authors = [{ name = "Equipo Solid" }]
 
 # Versiones fijadas con ==, no con >=. Un baseline de evals no es comparable si
@@ -28,6 +27,11 @@ dev = [
   "ruff==0.16.7",
   "nbstripout==0.9.1",
 ]
+
+# `quickdev analyze | eval | demo`. Tras anadirlo hay que reinstalar
+# (`pip install -e ".[dev]"`) para que el comando aparezca en el venv.
+[project.scripts]
+quickdev = "quickdev.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["quickdev"]
@@ -51,19 +55,6 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-
-# Quedan dos de las tres exenciones. `evals/motor.py` y `evals/casos.py` ya no
-# existen: los reemplazo core/miguel por cases/runner/diagnosis/reporting, que
-# pasan ruff limpios, asi que sus lineas se borraron aqui.
-#
-# La del notebook NO se puede borrar todavia, y no es un olvido. ruff lintea
-# .ipynb por defecto, el notebook conserva sus 28 violaciones preexistentes y lo
-# vacia core/jose (decision D1), que mergea DESPUES que core/miguel. Borrarla
-# ahora dejaria `ruff check .` en rojo por un archivo de otra rama. La borra
-# core/jose en el mismo commit en que vacie el notebook.
-exclude = [
-  "QuickDev_01.ipynb",  # dueno: core/jose
-]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]

@@ -28,12 +28,11 @@ from pathlib import Path
 
 from evals.cases import EVALS, EvalCase, Resultado
 from evals.diagnosis import UMBRALES_POR_DEFECTO, Umbrales, diagnosticar
-from evals.prompts_legacy import LegacyPromptProvider
 from evals.regressions import run_regresiones
 from quickdev.adapters import build_llm
 from quickdev.adapters.fake import FakeLlm
 from quickdev.application.analyze_batch import AnalyzeBatch
-from quickdev.application.prompting import PromptProvider
+from quickdev.application.prompting import PromptProvider, PromptRegistry
 from quickdev.config import Settings
 from quickdev.domain.models import SCHEMA_VERSION
 from quickdev.domain.rules.registry import rule_set
@@ -109,12 +108,37 @@ def construir_corrida(
     En modo replay, si no se pide un `n` explicito se usa el numero de corridas
     que hay grabadas, y se dice. Si se pide un `n` mayor del que hay, falla:
     encogerlo en silencio es el bug de `motor.py:429-431`.
+
+    Tambien falla, ANTES de correr nada, si el archivo no tiene grabado el input
+    de NINGUN caso con la forma de payload de `prompt_version`. Eso significa que
+    el archivo se midio con otra forma de input, y sin esta comprobacion la
+    salida era un diagnostico "0/15" con codigo 0: una medicion falsa de un
+    prompt que nunca se midio (p. ej. `--modo v2 --replay after/`).
+
+    Si faltan solo ALGUNOS casos no falla aqui, a proposito: es lo normal al
+    agregar un eval nuevo, que todavia no tiene corridas grabadas. Esos casos
+    salen como corridas muertas con `SinRespuestaGrabada` en su fila, visibles, y
+    el replay de los casos medidos sigue funcionando.
     """
-    rules_version = rules_version or prompt_version
+    prompts = PromptRegistry()
+    rules_version = rules_version or prompts.rules_for(prompt_version)
     settings = settings or Settings(prompt_version=prompt_version, rules_version=rules_version)
 
     if replay is not None:
         fake = FakeLlm.from_crudo(replay)
+        grabados = [
+            case.id
+            for case in EVALS
+            if FakeLlm.key_for_payload(prompts.build_payload(case.batch, prompt_version))
+            in fake.respuestas
+        ]
+        if not grabados:
+            raise ValueError(
+                f"{replay} no tiene ninguna corrida grabada con el payload del prompt "
+                f"'{prompt_version}'. Un replay solo reproduce lo que se midio con esa "
+                f"misma forma de input; para medir este prompt hay que correrlo "
+                f"contra la API."
+            )
         disponibles = fake.max_corridas
         if n is None:
             n = disponibles
@@ -130,7 +154,7 @@ def construir_corrida(
             n=n,
             settings=settings,
             llm=fake,
-            prompts=LegacyPromptProvider(),
+            prompts=prompts,
             umbrales=umbrales,
             es_replay=True,
         )
@@ -141,7 +165,7 @@ def construir_corrida(
         n=n or settings.eval_runs,
         settings=settings,
         llm=build_llm(settings),
-        prompts=LegacyPromptProvider(),
+        prompts=PromptRegistry(),
         umbrales=umbrales,
     )
 
@@ -221,7 +245,11 @@ def _una_corrida(
             "from_cache": bool(respuesta.from_cache) if respuesta else False,
             "latencia_s": round(respuesta.latency_s, 2) if respuesta else 0.0,
             "error": None,
-            "input": corrida.prompts.build_payload(case.batch).get("input"),
+            # La misma clave con la que `FakeLlm` buscara esta corrida: sin eso,
+            # una medicion con payload JSON no se podria reproducir despues.
+            "input": FakeLlm.key_for_payload(
+                corrida.prompts.build_payload(case.batch, corrida.prompt_version)
+            ),
             "output_crudo": crudo,
             "output_corregido": reparado,
             "hallazgos": [h.rule_id for h in resultado.findings],

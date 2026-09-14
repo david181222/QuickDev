@@ -140,10 +140,20 @@ class FakeLlm:
         siendo estable pero ya no casa con los archivos viejos. Ese cambio de
         forma es un cambio de comportamiento y hay que medirlo, no deslizarlo.
         """
-        entrada = request.payload.get("input")
+        return FakeLlm.key_for_payload(request.payload)
+
+    @staticmethod
+    def key_for_payload(payload: dict) -> str:
+        """`key` a partir del payload solo. El runner la usa al grabar `crudo.json`.
+
+        Que grabar y buscar usen la misma funcion es lo que garantiza que una
+        corrida medida hoy se pueda reproducir manana, sea cual sea la forma
+        del payload.
+        """
+        entrada = payload.get("input")
         if isinstance(entrada, str):
             return entrada
-        return json.dumps(request.payload, ensure_ascii=False, sort_keys=True)
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True)
 
     # -- utilidades ----------------------------------------------------------
 

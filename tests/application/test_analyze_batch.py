@@ -39,7 +39,7 @@ class PromptsDoble:
     def system_prompt(self, version: str) -> str:
         return f"prompt de prueba, version {version}"
 
-    def build_payload(self, batch: PlaytestBatch) -> dict:
+    def build_payload(self, batch: PlaytestBatch, version: str) -> dict:
         return {
             "build": batch.build,
             "comentarios": [c.model_dump() for c in batch.comentarios],

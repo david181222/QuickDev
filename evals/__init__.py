@@ -10,9 +10,9 @@ el mismo archivo y todas las ramas chocaban.
 - `runner.py`         orquestacion: corre el pipeline n veces por caso.
 - `diagnosis.py`      las 7 preguntas, derivadas del comportamiento observado.
 - `reporting.py`      los escritores y el directorio versionado de cada corrida.
-- `prompts_legacy.py` puente temporal: los prompts con los que se midio
-                      `baseline/` y `after/`. Lo reemplaza `core/jose` con el
-                      `PromptRegistry` que lee `prompts/*.md`.
+
+Los prompts no viven aqui: estan en `prompts/*.md` y los sirve
+`quickdev.application.prompting.PromptRegistry`.
 
 Uso desde la raiz del repo:
 

@@ -79,9 +79,12 @@ class Settings(BaseSettings):
             )
         return valor
 
-    # `prompt_version` no se valida todavia: los prompts viven en `prompts/*.md`
-    # y esa carpeta es de `core/jose`. Cuando exista el PromptRegistry, aqui va
-    # el validador equivalente.
+    # `prompt_version` NO se valida aqui, a proposito. Hacerlo obligaria a
+    # `config.py` a importar `application.prompting`, que es una capa que ya
+    # depende de `config`. Y no hace falta para lo que protegia el validador de
+    # reglas: una version de prompt inexistente revienta con KeyError en
+    # `render_prompt`, el PRIMER paso de AnalyzeBatch, antes de cualquier llamada
+    # a la API. La CLI de evals, ademas, la restringe con `choices`.
 
     @property
     def stamp(self) -> dict[str, str]:
