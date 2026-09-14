@@ -10,6 +10,9 @@ legitima, pero tiene que ser deliberada: eso es lo que este archivo obliga.
 regla de validacion.
 """
 
+import json
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -21,6 +24,8 @@ from quickdev.domain.models import (
     PlaytestBatch,
     PlaytestComment,
 )
+
+GOLDEN = Path(__file__).with_name("golden_schema.json")
 
 # Los ocho nombres del esquema congelado, escritos a mano a proposito. Que este
 # literal y el modelo tengan que coincidir es justamente la proteccion.
@@ -134,3 +139,26 @@ def test_un_comentario_vacio_no_es_un_comentario():
 def test_build_no_especificada_es_none_no_cadena_vacia():
     """La distincion que el edge case de version necesitaba."""
     assert PlaytestBatch().build is None
+
+
+def test_el_schema_derivado_coincide_con_el_golden_file():
+    """Detecta cambios de TIPO, no solo de nombre.
+
+    Los tests de arriba protegen los nombres de los 8 campos. Este protege la
+    forma completa: si alguien afloja un enum, quita un `max_length` o cambia
+    `int` por `str`, el diff salta aqui.
+
+    Para regenerarlo a proposito, despues de decidir el cambio y anotarlo en un
+    ADR:
+
+        python -c "import json;from quickdev.domain.models import FeedbackReport as R;\
+print(json.dumps(R.model_json_schema(),indent=2,ensure_ascii=False,sort_keys=True))" \
+            > tests/domain/golden_schema.json
+    """
+    actual = FeedbackReport.model_json_schema()
+    esperado = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    assert actual == esperado, (
+        "el esquema de salida cambio. Si es deliberado, regenera el golden file "
+        "y documenta el cambio en un ADR: renombrar o cambiar el tipo de un "
+        "campo invalida las mediciones de evals/resultados/."
+    )
