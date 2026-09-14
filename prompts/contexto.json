@@ -1,0 +1,12 @@
+{
+  "human_decision": "El desarrollador revisa el reporte agregado, confirma la validez de los problemas detectados y los comentarios descartados, y decide qué corregir en la siguiente build.",
+  "system_validations": [
+    "Cada comentario de entrada no puede estar vacío.",
+    "La fuente de cada comentario debe ser un valor predefinido y permitido (ej. 'Discord', 'Google Forms', 'Mensaje Directo').",
+    "El campo 'total_comentarios_analizados' en el reporte debe coincidir exactamente con el número de comentarios procesados en el lote.",
+    "La frecuencia de cualquier problema detectado no puede superar el 'total_comentarios_analizados'.",
+    "Todo texto citado en 'comentarios_evidencia' debe existir literalmente en el input original.",
+    "Todo texto citado en 'comentarios_descartados' debe existir literalmente en el input original.",
+    "Si 'version_juego' no es nulo, debe ser una cadena de texto que se encuentre literalmente en al menos uno de los comentarios de entrada."
+  ]
+}

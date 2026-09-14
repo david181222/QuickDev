@@ -1,0 +1,4 @@
+# Los prompts medidos se comparan por sha256: un checkout con autocrlf no debe
+# cambiarles un solo byte. PromptRegistry normaliza igual, esto es la primera linea.
+prompts/*.md text eol=lf
+prompts/*.json text eol=lf
