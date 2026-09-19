@@ -21,6 +21,7 @@ un archivo común. Este índice se consolidó al final, cuando ya existían todo
 | [0011](0011-prompts-como-archivos-congelados.md) | Prompts congelados con `sha256`; payload según la versión; `v2` sin medir | implementada · `v2` **pendiente de medir** | José |
 | [0012](0012-la-cache-no-se-usa-para-medir.md) | Las corridas de evals en vivo no usan caché: medir es muestrear. Corrige el ADR-0006 | implementada | equipo |
 | [0013](0013-contrato-reconciliado-y-contradiccion-medida.md) | El contrato se reconcilia con el código; la contradicción que el modelo recibió al medir se documenta, no se corrige | implementada | equipo |
+| [0014](0014-esquema-sin-additional-properties.md) | El esquema que se envía a Gemini va sin `additionalProperties`: con él, la API daba 400 en todas las llamadas | implementada | equipo |
 
 ## Lo que está decidido pero no medido
 
