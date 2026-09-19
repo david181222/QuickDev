@@ -309,7 +309,8 @@ def _pregunta_modelo(inestables: dict, n: int, umbrales: Umbrales) -> Pregunta:
         return Pregunta(
             Respuesta.SIN_DATO,
             f"{n} corridas no bastan para separar un flake de un defecto "
-            f"(hacen falta {umbrales.min_corridas}). Sube n: con caché es barato.",
+            f"(hacen falta {umbrales.min_corridas}). Sube n: cada corrida es una llamada "
+            f"real al modelo, sin caché (ADR-0012).",
         )
     if inestables:
         return Pregunta(

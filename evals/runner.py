@@ -105,6 +105,9 @@ def construir_corrida(
 ) -> Corrida:
     """Arma la corrida: que prompt, que reglas, cuantas veces y contra que modelo.
 
+    En vivo, la cache de `build_llm` va apagada: cada una de las n corridas es
+    una llamada real al modelo (ADR-0012).
+
     En modo replay, si no se pide un `n` explicito se usa el numero de corridas
     que hay grabadas, y se dice. Si se pide un `n` mayor del que hay, falla:
     encogerlo en silencio es el bug de `motor.py:429-431`.
@@ -159,6 +162,11 @@ def construir_corrida(
             es_replay=True,
         )
 
+    # Medir es muestrear, y una cache anula el muestreo. Su clave no lleva el
+    # numero de corrida y `correr_eval` manda la misma peticion n veces: con la
+    # cache encendida, la corrida 1 llama al modelo y las demas salen del disco.
+    # Se apaga aqui y no en `build_llm`, porque en el producto si sirve. ADR-0012.
+    settings = settings.model_copy(update={"cache_enabled": False})
     return Corrida(
         prompt_version=prompt_version,
         rules_version=rules_version,
