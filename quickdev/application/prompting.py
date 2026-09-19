@@ -12,10 +12,11 @@ version se usa (eso lo dice `Settings.prompt_version`).
 
 Cada `prompts/<version>.md` guarda el prompt de sistema YA RENDERIZADO, no una
 plantilla. El prompt original interpolaba `evals/contract_frozen.json`, y ese
-archivo tiene contradicciones pendientes de reconciliar: si el prompt fuera una
-plantilla, reconciliar el contrato cambiaria en silencio el texto con el que se
-midieron `baseline/` y `after/`. Por lo mismo, el `context` del payload sale de
-`prompts/contexto.json`, una copia congelada, y no del contrato.
+archivo contradecia al codigo: si el prompt fuera una plantilla, reconciliar el
+contrato (ADR-0013) habria cambiado en silencio el texto con el que se midieron
+`baseline/` y `after/`. Por lo mismo, el `context` del payload sale de
+`prompts/contexto.json`, una copia congelada, y no del contrato. Las
+contradicciones que el modelo recibio al medir siguen ahi, a proposito.
 
 El front matter declara tambien `rules_version` (con que reglas se mide) y
 `payload` (en que forma viaja el lote), porque las dos cosas son parte de lo que
