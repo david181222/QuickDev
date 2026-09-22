@@ -43,7 +43,7 @@ validación, reparación y traza— es el código de verdad.
 Todo lo demás también corre sin clave:
 
 ```bash
-.venv/bin/python -m pytest                  # 436 tests, sin red (los que llaman a la API: -m llm)
+.venv/bin/python -m pytest                  # 462 pasan y 1 se salta (la web, sin su extra); la API: -m llm
 .venv/bin/python -m ruff check .
 .venv/bin/python scripts/gate_baseline.py   # 7/7: el refactor no cambió lo medido
 .venv/bin/quickdev eval --prompt baseline --solo-regresiones
