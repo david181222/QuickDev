@@ -66,12 +66,28 @@ def test_el_input_es_el_que_recibio_el_modelo(registro, modo, eval_id):
     assert registro.build_payload(batch, modo)["input"] == _grabados(modo)[eval_id]
 
 
-def test_el_contexto_es_el_del_contrato_con_el_que_se_midio(registro, lote):
-    contrato = json.loads((RAIZ / "evals" / "contract_frozen.json").read_text("utf-8"))
-    assert registro.build_payload(lote(), "after")["context"] == {
-        "human_decision": contrato["human_decision"],
-        "system_validations": contrato["system_validations"],
-    }
+# sha256 del `context` que recibio el modelo al medir baseline y after:
+# `human_decision` y `system_validations` de `evals/contract_frozen.json` en
+# `418deff`, el commit de esas mediciones, serializados con `sort_keys`.
+SHA_CONTEXTO_MEDIDO = "1ef81b005b6eb1839361187481526312f5b5a6c00c77c1062be76511cf238d6b"
+
+
+def test_el_contexto_es_el_que_recibio_el_modelo_al_medir(registro, lote):
+    """El `context` del payload es la copia congelada de lo medido, no el contrato.
+
+    Este test comparaba antes el payload con `evals/contract_frozen.json`. Esa
+    premisa, "contrato == contexto medido", dejo de ser cierta a proposito al
+    reconciliar el contrato con el codigo (ADR-0013): el contrato se corrige, y
+    lo que el modelo recibio al medir, contradicciones incluidas, no se toca.
+    Por eso se compara con `prompts/contexto.json`, y el sha256 fija que esa
+    copia sigue siendo, byte a byte, la que se mando al medir.
+    """
+    contexto = registro.build_payload(lote(), "after")["context"]
+    congelado = json.loads((RAIZ / "prompts" / "contexto.json").read_text("utf-8"))
+    serializado = json.dumps(contexto, ensure_ascii=False, sort_keys=True)
+
+    assert contexto == congelado
+    assert hashlib.sha256(serializado.encode("utf-8")).hexdigest() == SHA_CONTEXTO_MEDIDO
 
 
 def test_version_inexistente_lista_las_disponibles(registro):

@@ -375,7 +375,7 @@ Sin API key ya se puede correr todo esto:
 
 ```bash
 ./.venv/Scripts/quickdev.exe demo                                # el lote de 14, sin red
-./.venv/Scripts/python.exe -m pytest                             # 448 passed
+./.venv/Scripts/python.exe -m pytest                             # 462 passed, 1 skipped
 ./.venv/Scripts/python.exe -m ruff check .                       # All checks passed!
 ./.venv/Scripts/python.exe scripts/gate_baseline.py              # 7/7 Puerta ABIERTA
 ./.venv/Scripts/python.exe -m evals --solo-regresiones

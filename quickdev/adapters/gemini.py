@@ -37,6 +37,7 @@ import time
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
+from pydantic import BaseModel
 
 from quickdev.config import Settings
 from quickdev.ports.llm import (
@@ -135,14 +136,15 @@ class GeminiAdapter:
 
         Cuando `response_schema` viene informado, el proveedor garantiza la
         estructura y desaparece una clase entera de fallos: JSONDecodeError,
-        campos extra, campos faltantes, enums invalidos. Ver ADR-0009.
+        campos faltantes, enums invalidos. Ver ADR-0009. El esquema no se pasa
+        tal cual: ver `_esquema_para_el_proveedor` y ADR-0014.
         """
         return types.GenerateContentConfig(
             system_instruction=request.system_prompt,
             temperature=request.temperature,
             max_output_tokens=request.max_output_tokens,
             response_mime_type="application/json",
-            response_schema=request.response_schema,
+            response_schema=_esquema_para_el_proveedor(request.response_schema),
         )
 
     @staticmethod
@@ -186,6 +188,39 @@ class GeminiAdapter:
                 f"max_output_tokens. Muestra: {muestra!r}"
             )
         return LlmRetryableError(f"JSON invalido del modelo: {exc}. Muestra: {muestra!r}")
+
+
+def _esquema_para_el_proveedor(modelo: type[BaseModel] | None) -> dict | None:
+    """El JSON Schema del modelo, sin `additionalProperties`.
+
+    `response_schema` acepta un subconjunto de OpenAPI 3.0 que no incluye
+    `additionalProperties`, y el `extra="forbid"` de los modelos del dominio lo
+    genera en cada objeto. Pasar el modelo Pydantic tal cual producia un 400 en
+    el 100% de las llamadas ("Unknown name additional_properties at
+    'generation_config.response_schema'"), y ningun test lo vio porque el
+    cliente doble no valida el esquema. Ver ADR-0014.
+
+    El SDK trata un modelo Pydantic y un dict por el mismo camino
+    (`model_json_schema()` y despues `process_schema`), asi que la unica
+    diferencia en la peticion es ese campo. No se pierde la garantia: un campo
+    extra en la respuesta sigue siendo un error de parseo en `AnalyzeBatch`,
+    porque el dominio conserva `extra="forbid"`.
+    """
+    if modelo is None:
+        return None
+    return _sin_additional_properties(modelo.model_json_schema())
+
+
+def _sin_additional_properties(nodo: object) -> object:
+    if isinstance(nodo, dict):
+        return {
+            clave: _sin_additional_properties(valor)
+            for clave, valor in nodo.items()
+            if clave != "additionalProperties"
+        }
+    if isinstance(nodo, list):
+        return [_sin_additional_properties(valor) for valor in nodo]
+    return nodo
 
 
 def _clasificar(exc: Exception) -> LlmRetryableError | LlmTerminalError:

@@ -7,18 +7,25 @@ Lo que NO le corresponde: decidir si la cache esta encendida (eso es
 
 ## Para que sirve de verdad
 
-Una corrida completa de evals son 5 casos x n corridas. Con n=3 son 15 llamadas;
-con n=10 son 50. El diagnostico del baseline derivaba "elegimos mal el modelo?"
-de `0 < fallos < 3`, y uno de tres no distingue un flake de un defecto. Subir n
-es la correccion, y la cache es lo que la hace asequible: la segunda vez que se
-reevalua una corrida ya medida, no se llama a la API.
+Para el producto: `quickdev analyze` sobre un lote que ya se analizo con el
+mismo prompt, modelo y configuracion no vuelve a pagar la llamada.
+
+## Para que NO sirve: medir
+
+Este docstring decia que la cache "hace asequible subir n" en los evals. Era
+falso: lo anula. La clave no lleva el numero de corrida y `correr_eval` manda la
+MISMA peticion n veces, asi que con la cache encendida la corrida 1 llama al
+modelo y las otras n-1 salen del disco. n pedidas, una muestra. Por eso las
+corridas en vivo de `evals/runner.py` la apagan. Ver ADR-0012.
 
 ## Por que la clave incluye la temperatura
 
-Porque la promesa es "misma entrada, misma salida", y eso solo se sostiene con
-`temperature=0`. Con temperatura alta dos llamadas identicas deben poder dar
-resultados distintos, y cachear las convertiria en la misma en silencio. Al
-incluir la temperatura en la clave, una corrida a 0.7 no reutiliza la de 0.0.
+Porque con temperatura alta dos llamadas identicas deben poder dar resultados
+distintos, y cachearlas las convertiria en la misma en silencio. Al incluir la
+temperatura en la clave, una corrida a 0.7 no reutiliza la de 0.0. Ni siquiera
+`temperature=0` garantiza "misma entrada, misma salida": el baseline midio
+`hitl_marcado` en 1/3 y 2/3 con temperatura 0. Esa varianza es justo lo que una
+medicion tiene que ver, y la razon de que medir no pase por aqui.
 
 ## Que NO invalida la cache
 

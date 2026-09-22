@@ -21,3 +21,6 @@ htmlcov/
 # reconstruye llamando a la API. Lo que SI se versiona son los outputs
 # guardados en evals/resultados/, que son el registro de una medicion.
 .cache/
+
+# Secretos de Streamlit (la interfaz web). El tema, .streamlit/config.toml, si se versiona.
+.streamlit/secrets.toml

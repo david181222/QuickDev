@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     # --- evals -------------------------------------------------------------
     # 10 y no 3: con n=3 no se distingue un flake de un defecto, y esa era la
     # base sobre la que el diagnostico respondia "elegimos mal el modelo?".
-    # Con cache en disco, subir n es casi gratis.
+    # Subir n no es gratis: las corridas en vivo no usan cache (ADR-0012).
     eval_runs: int = 10
 
     # -----------------------------------------------------------------------

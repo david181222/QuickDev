@@ -43,7 +43,7 @@ validación, reparación y traza— es el código de verdad.
 Todo lo demás también corre sin clave:
 
 ```bash
-.venv/bin/python -m pytest                  # 448 tests, sin red (los que llaman a la API: -m llm)
+.venv/bin/python -m pytest                  # 462 tests, sin red (los que llaman a la API: -m llm)
 .venv/bin/python -m ruff check .
 .venv/bin/python scripts/gate_baseline.py   # 7/7: el refactor no cambió lo medido
 .venv/bin/quickdev eval --prompt baseline --solo-regresiones
@@ -64,6 +64,27 @@ Un lote es un JSON como [`docs/ejemplos/lote_normal.json`](docs/ejemplos/lote_no
 
 Si vas a tocar el notebook, activa una vez por clon el filtro que le quita los outputs antes de
 cada commit: `.venv/bin/nbstripout --install`.
+
+### Interfaz web (Streamlit)
+
+La misma demo, en el navegador: elegir o subir un lote, analizarlo y leer el reporte con
+problemas priorizados, citas, descartes, hallazgos del validador y traza.
+
+```bash
+.venv/bin/python -m pip install -e ".[dev,web]"   # una vez: añade Streamlit
+.venv/bin/streamlit run quickdev/web/app.py       # Windows: .venv/Scripts/streamlit.exe run quickdev/web/app.py
+```
+
+Se abre en `http://localhost:8501`. Hay que lanzarla **desde la raíz del repo**, porque de ahí
+lee el tema (`.streamlit/config.toml`), los prompts y las respuestas grabadas. Dos modos, en la
+barra lateral:
+
+- **Demo sin API key**: reproduce las respuestas grabadas de `after` o `baseline`. Funciona con
+  los 5 ejemplos medidos; un lote nuevo no tiene respuesta grabada y la app lo avisa.
+- **Gemini en vivo**: usa la `GEMINI_API_KEY` del `.env`, o una pegada en la barra lateral que
+  solo vive en la sesión. Sirve para cualquier lote (JSON subido o comentarios escritos a mano).
+
+Como la CLI, la web solo compone y muestra: no valida ni repara nada por su cuenta.
 
 ---
 
@@ -250,4 +271,4 @@ El detalle cambio a cambio está en [`CHANGELOG.md`](CHANGELOG.md).
 | ¿Por qué empezó así? (la narrativa del notebook original) | [`docs/historia/`](docs/historia/README.md) |
 | ¿Qué cambió y cómo sabemos si mejoró? | [`CHANGELOG.md`](CHANGELOG.md) |
 | ¿Qué prompts existen y cuáles están medidos? | [`prompts/`](prompts/) (front matter de cada archivo) |
-| La demo para la sustentación | `quickdev demo` o [`QuickDev_01.ipynb`](QuickDev_01.ipynb) |
+| La demo para la sustentación | `quickdev demo`, la [interfaz web](quickdev/web/app.py) o [`QuickDev_01.ipynb`](QuickDev_01.ipynb) |

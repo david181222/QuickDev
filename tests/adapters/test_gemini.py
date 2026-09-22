@@ -59,26 +59,58 @@ def test_quita_la_valla_de_markdown(peticion):
     assert ad.complete_json(peticion).data == REPORTE_VALIDO
 
 
-def test_pasa_el_response_schema_al_proveedor():
-    """La forma la hace cumplir el proveedor, no una frase del prompt. ADR-0009."""
+def _config_enviada(response_schema=FeedbackReport):
     cliente = FakeClient(FakeSdkResponse(text=json.dumps(REPORTE_VALIDO)))
     ad = GeminiAdapter(client=cliente, settings=Settings(_env_file=None))
     peticion = LlmRequest(
         system_prompt="sp",
         payload={"input": "x"},
-        response_schema=FeedbackReport,
+        response_schema=response_schema,
         temperature=0.0,
         max_output_tokens=4096,
     )
-
     ad.complete_json(peticion)
+    return cliente.models.llamadas[0]["config"]
 
-    config = cliente.models.llamadas[0]["config"]
-    assert config.response_schema is FeedbackReport
+
+def test_pasa_el_response_schema_al_proveedor():
+    """La forma la hace cumplir el proveedor, no una frase del prompt. ADR-0009."""
+    config = _config_enviada()
+
+    dominio = FeedbackReport.model_json_schema()
+    assert config.response_schema["properties"] == dominio["properties"]
+    assert config.response_schema["required"] == dominio["required"]
     assert config.response_mime_type == "application/json"
     assert config.system_instruction == "sp"
     assert config.temperature == 0.0
     assert config.max_output_tokens == 4096
+
+
+def test_el_esquema_enviado_no_lleva_additional_properties():
+    """`response_schema` de Gemini no acepta `additionalProperties`. ADR-0014.
+
+    Con el modelo Pydantic tal cual, la API respondia 400 en el 100% de las
+    llamadas. Este test exigia antes `response_schema is FeedbackReport`: fijaba
+    justo el bug, y el cliente doble no valida el esquema, asi que nada lo vio
+    hasta la primera corrida real. Lo demas del esquema viaja intacto.
+    """
+    enviado = _config_enviada().response_schema
+    dominio = FeedbackReport.model_json_schema()
+
+    assert "additionalProperties" not in json.dumps(enviado)
+    assert enviado["$defs"] == {
+        nombre: {k: v for k, v in definicion.items() if k != "additionalProperties"}
+        for nombre, definicion in dominio["$defs"].items()
+    }
+
+
+def test_el_dominio_sigue_prohibiendo_campos_extra():
+    """Quitarlo del envio no quita la garantia: la frontera de parseo la conserva."""
+    assert '"additionalProperties": false' in json.dumps(FeedbackReport.model_json_schema())
+
+
+def test_sin_esquema_no_se_envia_esquema():
+    assert _config_enviada(response_schema=None).response_schema is None
 
 
 def test_el_payload_viaja_como_json(peticion):
