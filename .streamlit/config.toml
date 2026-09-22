@@ -1,0 +1,39 @@
+# Tema de la interfaz web (`streamlit run quickdev/web/app.py`).
+#
+# Streamlit lee este archivo desde la carpeta donde se lanza el comando, asi que
+# la web se arranca desde la raiz del repo. Hay tema claro y oscuro: el
+# navegador elige segun la preferencia del sistema, y se puede cambiar en el
+# menu (⋮) > Settings.
+
+[theme]
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 16
+metricValueFontSize = "1.75rem"
+baseRadius = "medium"
+buttonRadius = "medium"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.light]
+primaryColor = "#5b4bdb"
+backgroundColor = "#fafafc"
+secondaryBackgroundColor = "#f1f0f7"
+textColor = "#1f2130"
+borderColor = "#e2e1ec"
+linkColor = "#4a3bc7"
+
+[theme.dark]
+primaryColor = "#8f84f7"
+backgroundColor = "#111219"
+secondaryBackgroundColor = "#1b1c27"
+textColor = "#e9e9f1"
+borderColor = "#2e2f3d"
+linkColor = "#aaa2ff"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+# No enviar estadisticas de uso a Streamlit.
+gatherUsageStats = false
