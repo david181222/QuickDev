@@ -43,6 +43,10 @@ de las dos mediciones commiteadas sigue reproduciendo 12/15 y 15/15.
   con `FakeLlm`. Varios documentos ya decían que el pipeline "corre en CI sin red"; hasta ahora no
   había CI que lo hiciera.
 
+  Instala `".[dev,web]"` y no solo `".[dev]"`: `tests/web/test_app.py` empieza por
+  `pytest.importorskip("streamlit")`, así que sin el extra sus 8 tests se saltan en bloque y la CI
+  los contaría como un skip. En CI corren los 470.
+
 ### Cambiado
 
 - `docs/arquitectura.md` (sección 7): la comprobación de pureza documenta el test y conserva el
