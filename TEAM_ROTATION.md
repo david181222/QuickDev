@@ -9,6 +9,7 @@ Objetivo: que todos entiendan todo el sistema, no que cada persona quede encerra
 | Build owner | Edwin Velez | Cambio tecnico en notebook/script, prompt, modelo o flujo principal | TBD |
 | Evaluate owner | Miguel Moreno | Evals, baseline, expected vs actual, pass/fail | TBD |
 | Explain owner | Jose Diaz | README, resultados, decisiones y demo tecnica |  TBD |
+| Verify owner | Abel Garcia | CI, puerta de aceptacion y comprobaciones que corren solas | TBD |
 
 ## Reglas
 
