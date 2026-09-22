@@ -15,6 +15,42 @@ Tres reglas para leer las mediciones:
 
 ---
 
+## Pureza del dominio ejecutable y CI — 2026-09-22
+
+### Medición
+
+**Ninguna nueva, y ninguna cambiada.** Este cambio no toca `quickdev/`, ni los prompts, ni las
+reglas, ni `evals/resultados/`. Verificado: `scripts/gate_baseline.py` sigue dando 7/7, y el replay
+de las dos mediciones commiteadas sigue reproduciendo 12/15 y 15/15.
+
+### Añadido
+
+- `tests/domain/test_pureza.py`: la regla estructural del proyecto —nada de `quickdev/domain/`
+  importa infraestructura— deja de ser un `grep` en un documento y pasa a comprobarse en cada
+  `pytest`. Lee los imports con `ast` y exige que cada uno sea stdlib sin efectos, `pydantic` o
+  `quickdev.domain`.
+
+  Por qué el AST y no el `grep` de `docs/arquitectura.md`: ese grep busca cinco nombres escritos a
+  mano (`google|pandas|requests|os|pathlib`), así que dejaba pasar `import httpx`, `import socket`
+  y, sobre todo, `from quickdev.adapters import GeminiAdapter` — la única violación que la
+  arquitectura no podría sobrevivir, porque invierte la dirección de las dependencias. Es el mismo
+  argumento del proyecto aplicado a sí mismo: una instrucción en un documento no es una garantía;
+  una comprobación que corre sí ([ADR-0001](docs/adr/0001-arquitectura-hexagonal.md)).
+
+- `.github/workflows/ci.yml`: `ruff`, `pytest`, `scripts/gate_baseline.py` y el replay de las dos
+  mediciones, en cada push a `main` y en cada PR, sobre Python 3.12 y 3.14. **No necesita
+  `GEMINI_API_KEY` ni gasta cuota**: la suite deselecciona `-m llm` por defecto y los evals corren
+  con `FakeLlm`. Varios documentos ya decían que el pipeline "corre en CI sin red"; hasta ahora no
+  había CI que lo hiciera.
+
+### Cambiado
+
+- `docs/arquitectura.md` (sección 7): la comprobación de pureza documenta el test y conserva el
+  `grep` como atajo, con sus dos límites escritos.
+- El contador de la suite pasa de 436 a 448 en `README.md` y `docs/arquitectura.md`.
+
+---
+
 ## `core/jose` — 2026-09-14 · prompts, CLI, documentación y demo
 
 ### Medición

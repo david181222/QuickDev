@@ -375,7 +375,7 @@ Sin API key ya se puede correr todo esto:
 
 ```bash
 ./.venv/Scripts/quickdev.exe demo                                # el lote de 14, sin red
-./.venv/Scripts/python.exe -m pytest                             # 436 passed
+./.venv/Scripts/python.exe -m pytest                             # 448 passed
 ./.venv/Scripts/python.exe -m ruff check .                       # All checks passed!
 ./.venv/Scripts/python.exe scripts/gate_baseline.py              # 7/7 Puerta ABIERTA
 ./.venv/Scripts/python.exe -m evals --solo-regresiones
@@ -391,16 +391,28 @@ cp .env.example .env        # y pega la GEMINI_API_KEY
 
 ### Comprobar que el dominio sigue puro
 
-La regla estructural del proyecto es verificable, no un acuerdo verbal:
+La regla estructural del proyecto es verificable, no un acuerdo verbal, y desde
+`tests/domain/test_pureza.py` se comprueba sola en cada `pytest`: el test lee los
+imports de cada módulo de `quickdev/domain/` con `ast` y exige que cada uno sea
+stdlib sin efectos, `pydantic` o `quickdev.domain`.
+
+```bash
+.venv/bin/python -m pytest tests/domain/test_pureza.py
+```
+
+Antes esto era un `grep` que había que acordarse de correr:
 
 ```bash
 grep -rnE "^\s*(import|from)\s+(google|pandas|requests|os|pathlib)" \
      --include="*.py" quickdev/domain/
 ```
 
-Debe salir vacío. Ojo: un `grep` de `"genai|pandas"` a secas da falsos positivos,
-porque los docstrings del paquete mencionan esas palabras al explicar justamente
-esta regla.
+Sigue sirviendo para una comprobación rápida, pero tiene dos límites que el test
+no tiene. Busca **cinco nombres escritos a mano**, así que deja pasar
+`import httpx`, `import socket` y —lo que importa— `from quickdev.adapters import
+GeminiAdapter`, que es justo la violación que invertiría la dirección de las
+dependencias. Y da falsos positivos: los docstrings del paquete mencionan "genai"
+y "pandas" al explicar justamente esta regla.
 
 ---
 

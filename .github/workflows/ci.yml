@@ -1,0 +1,64 @@
+# Las garantias que el repo declara, ejecutandose solas en cada cambio.
+#
+# Nada de esto llama a la API ni necesita GEMINI_API_KEY: `addopts` deselecciona
+# los tests marcados `llm` por defecto, las regresiones son deterministas y los
+# evals corren en replay con `FakeLlm`. Una suite que cuesta dinero no se corre,
+# y una suite que no se corre no protege nada.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push nuevo sobre la misma rama cancela la corrida anterior: no tiene sentido
+# esperar por un resultado que ya esta obsoleto.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Sin fail-fast: si una version falla, interesa ver si la otra tambien.
+      fail-fast: false
+      matrix:
+        # 3.12 es el piso que declara `pyproject.toml`; 3.14 es la que usa el
+        # equipo. Probar las dos es lo que evita que el piso sea una promesa.
+        python: ["3.12", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Editable, como trabaja el equipo: la CLI lee `prompts/`, `evals/` y
+      # `docs/ejemplos/` desde la raiz del repo y no funciona desde un wheel.
+      - name: Instalar
+        run: python -m pip install -e ".[dev]"
+
+      - name: Ruff
+        run: python -m ruff check .
+
+      - name: Tests
+        run: python -m pytest
+
+      # La puerta de aceptacion: las regresiones deterministas siguen dando lo
+      # mismo que `evals/resultados/baseline/regresion.csv`, los 2 FAIL
+      # deliberados incluidos. Sale con codigo 1 si algo cambio.
+      - name: Puerta del baseline
+        run: python scripts/gate_baseline.py
+
+      # El pipeline completo de punta a punta, sin red: prompt, validacion,
+      # reparacion, diagnostico y reportes. Reproduce las dos mediciones
+      # commiteadas (baseline 12/15, after 15/15) desde su `crudo.json`.
+      - name: Replay de las mediciones, sin red
+        run: |
+          python -m evals --modo baseline --replay evals/resultados/baseline/crudo.json
+          python -m evals --modo after --replay evals/resultados/after/crudo.json
