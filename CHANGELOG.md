@@ -15,6 +15,24 @@ Tres reglas para leer las mediciones:
 
 ---
 
+## `feature/web-streamlit` — 2026-09-22 · interfaz web
+
+### Medición
+
+**Ninguna nueva.** La web es otra superficie como la CLI: compone `AnalyzeBatch` con
+`construir_analisis` y no toca prompts, reglas ni adaptadores. En modo demo reproduce las mismas
+respuestas grabadas que `quickdev demo`.
+
+### Añadido
+
+- `quickdev/web/`: interfaz Streamlit (`streamlit run quickdev/web/app.py`). Lote desde un ejemplo
+  medido, un JSON subido o comentarios escritos a mano; modo demo sin API key o Gemini en vivo;
+  reporte con banner de revisión humana, métricas, problemas, evidencia, descartes, hallazgos del
+  validador (crudo vs. corregido), traza y descarga del JSON.
+- `.streamlit/config.toml`: tema claro y oscuro, fuentes Inter y JetBrains Mono.
+- Extra opcional `web` en `pyproject.toml` (`streamlit==1.64.0`, fijado como el resto).
+- `tests/web/test_app.py`: 8 tests con `AppTest`, sin red; se saltan si Streamlit no está instalado.
+
 ## `core/jose` — 2026-09-14 · prompts, CLI, documentación y demo
 
 ### Medición

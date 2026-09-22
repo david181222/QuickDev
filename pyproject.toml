@@ -27,6 +27,11 @@ dev = [
   "ruff==0.16.7",
   "nbstripout==0.9.1",
 ]
+# La interfaz web (`streamlit run quickdev/web/app.py`). Opcional: la CLI, los
+# tests y los evals no la necesitan.
+web = [
+  "streamlit==1.64.0",
+]
 
 # `quickdev analyze | eval | demo`. Tras anadirlo hay que reinstalar
 # (`pip install -e ".[dev]"`) para que el comando aparezca en el venv.
