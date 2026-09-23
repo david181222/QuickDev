@@ -1,0 +1,29 @@
+{
+  "run_id": "267100f99eed",
+  "started_at": "2026-09-14T18:50:16+00:00",
+  "finished_at": "2026-09-14T18:50:16+00:00",
+  "versiones": {
+    "prompt_version": "baseline",
+    "rules_version": "baseline",
+    "schema_version": "v1.1",
+    "model": "replay",
+    "git_sha": "343efe3-sucio"
+  },
+  "corridas": 3,
+  "llamadas": {
+    "total": 15,
+    "desde_cache": 0,
+    "tasa_de_cache": 0.0,
+    "intentos_totales": 21,
+    "errores": 0
+  },
+  "latencia": {
+    "total_s": 603.44,
+    "media_s": 40.23,
+    "muestras": 15
+  },
+  "tokens": {},
+  "notas": {
+    "replay": "Reproduccion de outputs ya medidos. No se llamo a la API."
+  }
+}

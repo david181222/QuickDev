@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "DetectedIssue": {
+      "additionalProperties": false,
+      "description": "Un problema agregado detectado en el lote.",
+      "properties": {
+        "categoria": {
+          "enum": [
+            "balance",
+            "bugs",
+            "dificultad",
+            "rendimiento",
+            "interfaz",
+            "diversion",
+            "economia",
+            "otro"
+          ],
+          "title": "Categoria",
+          "type": "string"
+        },
+        "descripcion": {
+          "maxLength": 200,
+          "title": "Descripcion",
+          "type": "string"
+        },
+        "evidencia_idx": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Evidencia Idx",
+          "type": "array"
+        },
+        "frecuencia": {
+          "minimum": 1,
+          "title": "Frecuencia",
+          "type": "integer"
+        },
+        "fuente_predominante": {
+          "anyOf": [
+            {
+              "enum": [
+                "discord",
+                "steam",
+                "encuesta",
+                "red_social"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fuente Predominante"
+        },
+        "prioridad": {
+          "enum": [
+            "alta",
+            "media",
+            "baja"
+          ],
+          "title": "Prioridad",
+          "type": "string"
+        }
+      },
+      "required": [
+        "categoria",
+        "descripcion",
+        "frecuencia",
+        "prioridad"
+      ],
+      "title": "DetectedIssue",
+      "type": "object"
+    },
+    "DiscardedComment": {
+      "additionalProperties": false,
+      "description": "Un comentario que el modelo decidio no usar, con su motivo.\n\nNada desaparece en silencio: todo lo descartado queda aqui para que el\ndesarrollador pueda auditar que se ignoro y por que.",
+      "properties": {
+        "motivo": {
+          "enum": [
+            "ruido",
+            "sesgado",
+            "extremista",
+            "sin_relacion"
+          ],
+          "title": "Motivo",
+          "type": "string"
+        },
+        "texto": {
+          "title": "Texto",
+          "type": "string"
+        }
+      },
+      "required": [
+        "texto",
+        "motivo"
+      ],
+      "title": "DiscardedComment",
+      "type": "object"
+    },
+    "QuotedComment": {
+      "additionalProperties": false,
+      "description": "Una cita de evidencia. `texto` debe existir literalmente en el lote.",
+      "properties": {
+        "fuente": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fuente"
+        },
+        "texto": {
+          "title": "Texto",
+          "type": "string"
+        }
+      },
+      "required": [
+        "texto"
+      ],
+      "title": "QuotedComment",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "El reporte agregado. El contrato de salida del producto.\n\nEstos ocho campos y estos ocho nombres son el esquema congelado. `extra` esta\nen \"forbid\" a proposito: un campo que el esquema no declara es un error de\nparseo en la frontera, no un hallazgo de validacion. Mover esa comprobacion\na la frontera es lo que permite que el proveedor la garantice via\n`response_schema` en vez de pedirla por prompt. Ver ADR-0009.",
+  "properties": {
+    "comentarios_descartados": {
+      "items": {
+        "$ref": "#/$defs/DiscardedComment"
+      },
+      "title": "Comentarios Descartados",
+      "type": "array"
+    },
+    "comentarios_evidencia": {
+      "items": {
+        "$ref": "#/$defs/QuotedComment"
+      },
+      "title": "Comentarios Evidencia",
+      "type": "array"
+    },
+    "problemas_detectados": {
+      "items": {
+        "$ref": "#/$defs/DetectedIssue"
+      },
+      "title": "Problemas Detectados",
+      "type": "array"
+    },
+    "requiere_revision_humana": {
+      "title": "Requiere Revision Humana",
+      "type": "boolean"
+    },
+    "resumen_general": {
+      "maxLength": 400,
+      "title": "Resumen General",
+      "type": "string"
+    },
+    "sentimiento_general": {
+      "enum": [
+        "positivo",
+        "neutro",
+        "negativo"
+      ],
+      "title": "Sentimiento General",
+      "type": "string"
+    },
+    "total_comentarios_analizados": {
+      "minimum": 0,
+      "title": "Total Comentarios Analizados",
+      "type": "integer"
+    },
+    "version_juego": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Version Juego"
+    }
+  },
+  "required": [
+    "resumen_general",
+    "sentimiento_general",
+    "version_juego",
+    "total_comentarios_analizados",
+    "requiere_revision_humana",
+    "problemas_detectados",
+    "comentarios_evidencia",
+    "comentarios_descartados"
+  ],
+  "title": "FeedbackReport",
+  "type": "object"
+}

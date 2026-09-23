@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quickdev"
+version = "0.1.0"
+description = "Analisis de feedback de playtesters: el modelo interpreta lenguaje, el codigo verifica hechos."
+requires-python = ">=3.12"
+readme = "README.md"
+authors = [{ name = "Equipo Solid" }]
+
+# Versiones fijadas con ==, no con >=. Un baseline de evals no es comparable si
+# el entorno flota: si manana el SDK cambia de comportamiento, la medicion
+# guardada deja de significar lo mismo y no hay nada en el repo que lo explique.
+dependencies = [
+  "google-genai==2.18.1",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.15.0",
+  "pandas==3.0.5",
+  "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "ruff==0.16.7",
+  "nbstripout==0.9.1",
+]
+# La interfaz web (`streamlit run quickdev/web/app.py`). Opcional: la CLI, los
+# tests y los evals no la necesitan.
+web = [
+  "streamlit==1.64.0",
+]
+
+# `quickdev analyze | eval | demo`. Tras anadirlo hay que reinstalar
+# (`pip install -e ".[dev]"`) para que el comando aparezca en el venv.
+[project.scripts]
+quickdev = "quickdev.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["quickdev"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Los tests marcados `llm` gastan cuota de API y dependen de la red. Quedan
+# deseleccionados por defecto: una suite que cuesta dinero no se corre, y una
+# suite que no se corre no protege nada. Para correrlos: pytest -m llm
+addopts = "-m 'not llm' --strict-markers -q"
+markers = [
+  "llm: llama a la API de Gemini (deseleccionado por defecto; usa -m llm)",
+]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Permiso anticipado: cuando las ramas anaden re-exports de conveniencia a los
+# __init__ (`from .models import FeedbackReport`), F401 los marcaria como
+# import sin usar. Hoy ningun __init__ importa nada, asi que esta linea no
+# silencia nada todavia.
+"quickdev/**/__init__.py" = ["F401"]

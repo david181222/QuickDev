@@ -6,6 +6,11 @@
 - Tiene `OUTPUT_SCHEMA` congelado y validacion determinista de conteos, enums y citas.
 - Los tests adversariales tienen criterios PASA/FALLA.
 - La tasa guardada es 4/5, lo cual es bueno pedagogicamente porque muestra una falla real.
+  > **Obsoleto (2026-09-14, `core/jose`).** Ese 4/5 era la tabla de pruebas adversariales de la
+  > Parte 7 del notebook: cinco casos, una corrida cada uno, y fallaba el caso `normal`. Esa tabla
+  > ya no existe. Las mediciones vigentes estan en `evals/resultados/`: **baseline 12/15** (edge
+  > case de version 0/3) y **after 15/15**, con 3 corridas por eval. No son comparables con el
+  > 4/5. Detalle en `CHANGELOG.md`.
 - No habia una carpeta `evals/` versionada para convertir esas pruebas en regresion mantenible.
 
 ## Mejora aplicada
@@ -18,6 +23,16 @@ Cuando un equipo mejora prompts, puede romper validaciones que antes funcionaban
 
 ## Como probarlo
 
+> **Obsoleto (2026-09-14, `core/jose`).** Los pasos de abajo ya no funcionan: el notebook no
+> define `validate_output` ni `run_prototype`, porque dejo de contener logica (ADR-0010). Se
+> conservan como registro de lo que se pidio. Hoy, cada fila de
+> `evals/quickdev_regression_cases.csv` es una regresion ejecutable:
+>
+> ```bash
+> .venv/bin/python -m pytest tests/domain/test_regressions.py
+> .venv/bin/quickdev eval --prompt after --solo-regresiones      # 7/7 PASS
+> ```
+
 1. Abre `QuickDev_01.ipynb`.
 2. Ejecuta hasta `validate_output` y `run_prototype`.
 3. Usa los escenarios de `evals/quickdev_regression_cases.csv`.
@@ -29,6 +44,10 @@ Cuando un equipo mejora prompts, puede romper validaciones que antes funcionaban
 2. Intermediate: guardar resultados en `evals/results.csv`.
 3. Advanced: extraer `validate_output` a un script Python reusable y ejecutarlo sin depender del notebook.
 
+> **Estado (2026-09-14).** Core: hecho, y luego llevado de celdas a `tests/domain/test_regressions.py`.
+> Intermediate: hecho de otra forma, cada corrida escribe su propio `evals/resultados/<fecha>-<prompt>-<reglas>/`
+> (ADR-0007). Advanced: hecho, `validate_output` es `Validator` + `RepairPolicy` en
+> `quickdev/domain/validation.py`, sin notebook (ADR-0003, ADR-0004).
 <!-- MAKERS_REVIEW_2026_08_27_START -->
 ## Revision docente - 2026-08-27
 
@@ -95,3 +114,9 @@ Crear docs/arquitectura.md y dejar README con comandos exactos para correr evalu
 Abel debe hacer un commit propio. Si no ha entrado al flujo, asignarle un aporte pequeno: documentar arquitectura, correr evals o agregar un caso de regresion.
 <!-- MAKERS_CODE_ARCH_REVIEW_2026_09_01_END -->
 
+> **Estado (2026-09-14).** Comandos exactos: `README.md`, seccion 2. Tabla baseline / after /
+> regresiones / fallas pendientes: `README.md`, secciones 5 y 6. Siguiente hipotesis tecnica:
+> el prompt `v2` (comentarios como array JSON), preparado y pendiente de medir (ADR-0011).
+> Diagrama: `docs/arquitectura.md`, que refleja la estructura actual (`MotorEvals` es hoy
+> `evals/runner.py` + `diagnosis.py` + `reporting.py`; `CasosEval`, `evals/cases.py`).
+<!-- MAKERS_REVIEW_2026_08_27_END -->
